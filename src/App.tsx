@@ -34,6 +34,7 @@ import CloudArchitectureTest from './validation/cloud-architecture/CloudArchitec
 
 // Import our live validation components
 import SpeechToTextLive from './validation/speech-to-text/SpeechToTextLive';
+import SpeechToTextLiveFixed from './validation/speech-to-text/SpeechToTextLiveFixed';
 import TextToSpeechLive from './validation/text-to-speech/TextToSpeechLive';
 
 // Create theme with the SpeakBetter color scheme
@@ -99,6 +100,8 @@ function App() {
         return <SpeechToTextTest />;
       case 'speech-to-text-live':
         return <SpeechToTextLive />;
+      case 'speech-to-text-live-fixed':
+        return <SpeechToTextLiveFixed />;
       case 'text-to-speech':
         return <TextToSpeechTest />;
       case 'text-to-speech-live':
@@ -225,6 +228,29 @@ function App() {
               </ListItem>
               <ListItem disablePadding>
                 <ListItemButton 
+                  selected={activePage === 'speech-to-text-live-fixed'}
+                  onClick={() => handlePageChange('speech-to-text-live-fixed')}
+                >
+                  <ListItemIcon>
+                    <RecordVoiceOverIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Speech-to-Text
+                        <Chip 
+                          label="Fixed Version" 
+                          size="small" 
+                          color="success" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
                   selected={activePage === 'text-to-speech'}
                   onClick={() => handlePageChange('text-to-speech')}
                 >
@@ -324,6 +350,11 @@ const DashboardPage = () => {
           ✓ Firebase Extensions successfully configured with both Speech-to-Text and Text-to-Speech APIs
         </Typography>
         
+        <Typography variant="body1" paragraph color="warning.main" fontWeight="bold">
+          ⚠️ Initial Speech-to-Text Integration Issue: There seems to be a collection path mismatch between our code and the Firebase Extension. 
+          Use the "Fixed Version" for improved compatibility and debugging.
+        </Typography>
+        
         <Typography variant="body1" paragraph>
           We now have both mock and live implementations available for testing. The live components
           connect to the actual Google Cloud APIs through Firebase Extensions.
@@ -348,7 +379,7 @@ const DashboardPage = () => {
               <RecordVoiceOverIcon color="primary" />
             </ListItemIcon>
             <ListItemText 
-              primary="Speech-to-Text Test (Mock & Live)" 
+              primary="Speech-to-Text Test (Mock, Live & Fixed)" 
               secondary="Tests Google Cloud Speech-to-Text API for transcription accuracy"
             />
           </ListItem>
