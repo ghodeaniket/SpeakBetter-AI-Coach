@@ -16,7 +16,8 @@ import {
   ListItemText,
   Divider,
   IconButton,
-  Paper
+  Paper,
+  Chip
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import MicIcon from '@mui/icons-material/Mic';
@@ -30,6 +31,10 @@ import WebRTCCompatibilityTest from './validation/webrtc/WebRTCCompatibilityTest
 import SpeechToTextTest from './validation/speech-to-text/SpeechToTextTest';
 import TextToSpeechTest from './validation/text-to-speech/TextToSpeechTest';
 import CloudArchitectureTest from './validation/cloud-architecture/CloudArchitectureTest';
+
+// Import our live validation components
+import SpeechToTextLive from './validation/speech-to-text/SpeechToTextLive';
+import TextToSpeechLive from './validation/text-to-speech/TextToSpeechLive';
 
 // Create theme with the SpeakBetter color scheme
 const theme = createTheme({
@@ -92,8 +97,12 @@ function App() {
         return <WebRTCCompatibilityTest />;
       case 'speech-to-text':
         return <SpeechToTextTest />;
+      case 'speech-to-text-live':
+        return <SpeechToTextLive />;
       case 'text-to-speech':
         return <TextToSpeechTest />;
+      case 'text-to-speech-live':
+        return <TextToSpeechLive />;
       case 'cloud-architecture':
         return <CloudArchitectureTest />;
       default:
@@ -176,7 +185,42 @@ function App() {
                   <ListItemIcon>
                     <RecordVoiceOverIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Speech-to-Text" />
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Speech-to-Text
+                        <Chip 
+                          label="Mock" 
+                          size="small" 
+                          color="default" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
+                  selected={activePage === 'speech-to-text-live'}
+                  onClick={() => handlePageChange('speech-to-text-live')}
+                >
+                  <ListItemIcon>
+                    <RecordVoiceOverIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Speech-to-Text
+                        <Chip 
+                          label="Live API" 
+                          size="small" 
+                          color="primary" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
                 </ListItemButton>
               </ListItem>
               <ListItem disablePadding>
@@ -187,7 +231,42 @@ function App() {
                   <ListItemIcon>
                     <VoiceChatIcon />
                   </ListItemIcon>
-                  <ListItemText primary="Text-to-Speech" />
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Text-to-Speech
+                        <Chip 
+                          label="Mock" 
+                          size="small" 
+                          color="default" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
+                  selected={activePage === 'text-to-speech-live'}
+                  onClick={() => handlePageChange('text-to-speech-live')}
+                >
+                  <ListItemIcon>
+                    <VoiceChatIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Text-to-Speech
+                        <Chip 
+                          label="Live API" 
+                          size="small" 
+                          color="primary" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
                 </ListItemButton>
               </ListItem>
               <ListItem disablePadding>
@@ -238,6 +317,19 @@ const DashboardPage = () => {
         </Typography>
         
         <Typography variant="h6" gutterBottom>
+          Live API Validation
+        </Typography>
+        
+        <Typography variant="body1" paragraph color="success.main" fontWeight="bold">
+          ✓ Firebase Extensions successfully configured with both Speech-to-Text and Text-to-Speech APIs
+        </Typography>
+        
+        <Typography variant="body1" paragraph>
+          We now have both mock and live implementations available for testing. The live components
+          connect to the actual Google Cloud APIs through Firebase Extensions.
+        </Typography>
+        
+        <Typography variant="h6" gutterBottom>
           Validation Components
         </Typography>
         
@@ -256,7 +348,7 @@ const DashboardPage = () => {
               <RecordVoiceOverIcon color="primary" />
             </ListItemIcon>
             <ListItemText 
-              primary="Speech-to-Text Test" 
+              primary="Speech-to-Text Test (Mock & Live)" 
               secondary="Tests Google Cloud Speech-to-Text API for transcription accuracy"
             />
           </ListItem>
@@ -265,7 +357,7 @@ const DashboardPage = () => {
               <VoiceChatIcon color="primary" />
             </ListItemIcon>
             <ListItemText 
-              primary="Text-to-Speech Test" 
+              primary="Text-to-Speech Test (Mock & Live)" 
               secondary="Evaluates Google Cloud Text-to-Speech for natural feedback voices"
             />
           </ListItem>
@@ -279,12 +371,6 @@ const DashboardPage = () => {
             />
           </ListItem>
         </List>
-        
-        <Typography variant="body2" sx={{ mt: 2, fontStyle: 'italic' }}>
-          Note: These test components simulate integration with Google Cloud services for
-          Sprint 0 validation. The actual implementation will connect to real Google Cloud
-          services in future sprints.
-        </Typography>
       </Paper>
       
       <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
@@ -306,7 +392,7 @@ const DashboardPage = () => {
             <ListItemText primary="✅ Measure end-to-end processing latency" />
           </ListItem>
           <ListItem>
-            <ListItemText primary="✅ Validate security rules with simulated user scenarios" />
+            <ListItemText primary="✅ Validate Firebase Extensions for speech processing" />
           </ListItem>
         </List>
       </Paper>
