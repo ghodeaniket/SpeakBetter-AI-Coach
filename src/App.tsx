@@ -37,6 +37,9 @@ import SpeechToTextLive from './validation/speech-to-text/SpeechToTextLive';
 import SpeechToTextLiveFixed from './validation/speech-to-text/SpeechToTextLiveFixed';
 import SpeechToTextWithDirect from './validation/speech-to-text/SpeechToTextWithDirect';
 import TextToSpeechLive from './validation/text-to-speech/TextToSpeechLive';
+import TextToSpeechLiveFixed from './validation/text-to-speech/TextToSpeechLiveFixed';
+import SpeechToTextEnhanced from './validation/speech-to-text/SpeechToTextEnhanced';
+import SpeechToTextTroubleshooter from './validation/speech-to-text/SpeechToTextTroubleshooter';
 
 // Create theme with the SpeakBetter color scheme
 const theme = createTheme({
@@ -105,10 +108,16 @@ function App() {
         return <SpeechToTextLiveFixed />;
       case 'speech-to-text-direct':
         return <SpeechToTextWithDirect />;
+      case 'speech-to-text-enhanced':
+        return <SpeechToTextEnhanced />;
+      case 'speech-to-text-troubleshooter':
+        return <SpeechToTextTroubleshooter />;
       case 'text-to-speech':
         return <TextToSpeechTest />;
       case 'text-to-speech-live':
         return <TextToSpeechLive />;
+      case 'text-to-speech-live-fixed':
+        return <TextToSpeechLiveFixed />;
       case 'cloud-architecture':
         return <CloudArchitectureTest />;
       default:
@@ -277,6 +286,52 @@ function App() {
               </ListItem>
               <ListItem disablePadding>
                 <ListItemButton 
+                  selected={activePage === 'speech-to-text-enhanced'}
+                  onClick={() => handlePageChange('speech-to-text-enhanced')}
+                >
+                  <ListItemIcon>
+                    <RecordVoiceOverIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Speech-to-Text
+                        <Chip 
+                          label="Enhanced" 
+                          size="small" 
+                          color="success" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem', bgcolor: '#4CAF50' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
+                  selected={activePage === 'speech-to-text-troubleshooter'}
+                  onClick={() => handlePageChange('speech-to-text-troubleshooter')}
+                >
+                  <ListItemIcon>
+                    <RecordVoiceOverIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Speech-to-Text
+                        <Chip 
+                          label="Troubleshooter" 
+                          size="small" 
+                          color="error" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
                   selected={activePage === 'text-to-speech'}
                   onClick={() => handlePageChange('text-to-speech')}
                 >
@@ -314,6 +369,29 @@ function App() {
                           label="Live API" 
                           size="small" 
                           color="primary" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
+                  selected={activePage === 'text-to-speech-live-fixed'}
+                  onClick={() => handlePageChange('text-to-speech-live-fixed')}
+                >
+                  <ListItemIcon>
+                    <VoiceChatIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Text-to-Speech
+                        <Chip 
+                          label="Fixed Version" 
+                          size="small" 
+                          color="success" 
                           sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
                         />
                       </Box>
@@ -379,6 +457,15 @@ const DashboardPage = () => {
         <Typography variant="body1" paragraph color="warning.main" fontWeight="bold">
           ⚠️ Initial Speech-to-Text Integration Issue: There seems to be a collection path mismatch between our code and the Firebase Extension. 
           Use the "Fixed Version" for improved compatibility and debugging.
+        </Typography>
+        
+        <Typography variant="body1" paragraph color="warning.main" fontWeight="bold">
+          ⚠️ Text-to-Speech Integration Issue: The initial implementation has difficulties extracting audio URLs from different extension configurations.
+          Use the "Fixed Version" which implements automatic collection detection and multiple path handling strategies.
+        </Typography>
+        
+        <Typography variant="body1" paragraph color="success.main" fontWeight="bold">
+          ✨ New Enhanced Speech-to-Text Component Added: The enhanced implementation provides better compatibility with different Firebase Extension configurations and improved debugging.
         </Typography>
         
         <Typography variant="body1" paragraph>

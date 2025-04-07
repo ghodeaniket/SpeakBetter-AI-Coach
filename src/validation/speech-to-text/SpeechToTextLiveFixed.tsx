@@ -62,24 +62,66 @@ const SpeechToTextLiveFixed: React.FC = () => {
   const [processingTimeMs, setProcessingTimeMs] = useState<number | null>(null);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
-  // Function to upload audio to Firebase Storage
+  // Function to upload audio to Firebase Storage and create the related documents
   const uploadAudioForTranscription = async (blob: Blob): Promise<string> => {
-    // Create a unique file name
-    const fileName = `speech_samples/test_${Date.now()}.webm`;
-    const storageRef = ref(storage, fileName);
-    
-    // Upload the blob
-    const startTime = Date.now();
-    await uploadBytes(storageRef, blob);
-    addDebugMessage(`Audio uploaded to ${fileName}`);
-    
-    // Return the file path
-    return fileName;
+    try {
+      // Create a unique file name - use a simple name format that the extension can handle better
+      const timestamp = Date.now();
+      const fileName = `test_${timestamp}.webm`;
+      const filePath = `speech_samples/${fileName}`;
+      const storageRef = ref(storage, filePath);
+      
+      // Upload the blob
+      addDebugMessage(`Uploading audio to ${filePath}...`);
+      await uploadBytes(storageRef, blob);
+      addDebugMessage(`Audio uploaded successfully to ${filePath}`);
+      
+      // Use a simple format for the extension without serverTimestamp
+      addDebugMessage(`Trying simple extension format...`);
+      
+      try {
+        // Simple format that should work with most STT extensions
+        const docRef = await addDoc(collection(db, 'transcriptions'), {
+          audio_file: filePath,
+          created_at: new Date().toISOString() // Use string timestamp instead
+        });
+        
+        addDebugMessage(`✓ Created document with ID: ${docRef.id}`);
+      } catch (err) {
+        const errorMessage = `Failed to create document: ${err}`;
+        addDebugMessage(`✖ ${errorMessage}`);
+        console.error(errorMessage, err);
+        setError(errorMessage);
+        
+        // Check Firestore permissions
+        addDebugMessage("Checking Firestore access permissions...");
+        try {
+          const testRef = await addDoc(collection(db, 'test_collection'), {
+            test: true,
+            timestamp: new Date().toISOString()
+          });
+          
+          addDebugMessage(`✓ Test collection write successful: ${testRef.id}`);
+        } catch (permErr) {
+          addDebugMessage(`✖ Firestore permissions issue: ${permErr}`);
+          setError(`Firestore permission error. Check your Firebase project configuration.`);
+        }
+      }
+      
+      // Return the file path
+      return filePath;
+    } catch (err) {
+      const errorMsg = `Error in upload process: ${err}`;
+      addDebugMessage(`⚠️ ${errorMsg}`);
+      setError(errorMsg);
+      throw err;
+    }
   };
 
   // Helper to add debug messages
   const addDebugMessage = (message: string) => {
-    setDebugInfo(prev => [...prev, `${new Date().toISOString().substring(11, 19)} - ${message}`]);
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugInfo(prev => [...prev, `${timestamp} - ${message}`]);
     console.log(message);
   };
 
@@ -89,162 +131,121 @@ const SpeechToTextLiveFixed: React.FC = () => {
       const startTime = Date.now();
       addDebugMessage(`Starting to listen for results for file: ${filePath}`);
       
-      // First, let's try to find existing collections in Firestore that might contain our transcription
-      const checkExistingCollections = async () => {
-        try {
-          // Get all documents across multiple potential collections
-          const possibleCollections = [
-            'transcriptions',
-            'speech_transcriptions',
-            'speechToText',
-            'stt_results',
-            'audioTranscriptions'
-          ];
-          
-          const cleanFileName = filePath.split('/').pop()?.replace(/\./g, '_') || '';
-          
-          let found = false;
-          for (const collName of possibleCollections) {
-            addDebugMessage(`Checking collection: ${collName}`);
-            
-            // Try different document ID formats
-            const potentialDocIds = [
-              filePath,
-              filePath.replace(/\//g, '_'),
-              cleanFileName,
-              `transcript_${cleanFileName}`
-            ];
-            
-            for (const docId of potentialDocIds) {
-              const docRef = doc(db, collName, docId);
-              const docSnap = await getDoc(docRef);
-              
-              if (docSnap.exists()) {
-                addDebugMessage(`Found document in ${collName} with ID: ${docId}`);
-                found = true;
-                
-                // Set up listener on this specific document
-                const unsubscribe = onSnapshot(docRef, (docSnapshot) => {
-                  if (docSnapshot.exists()) {
-                    const data = docSnapshot.data();
-                    addDebugMessage(`Document updated: ${JSON.stringify(data).substring(0, 100)}...`);
-                    
-                    if (data.status === 'completed' || data.transcript) {
-                      unsubscribe();
-                      const endTime = Date.now();
-                      setProcessingTimeMs(endTime - startTime);
-                      
-                      const filler_words = extractFillerWords(data.transcript || '');
-                      resolve({
-                        transcript: data.transcript || '',
-                        confidence: data.confidence || 0.9,
-                        fillerWords: {
-                          count: filler_words.length,
-                          words: filler_words.map(w => ({
-                            word: w.word,
-                            timestamp: w.timestamp
-                          }))
-                        }
-                      });
-                    }
-                  }
-                });
-                
-                return; // Exit after setting up listener
-              }
-            }
-          }
-          
-          if (!found) {
-            // If we haven't found an existing document, set up a query listener
-            setUpQueryListener();
-          }
-        } catch (err) {
-          addDebugMessage(`Error checking existing collections: ${err}`);
-          // Fall back to query listener
-          setUpQueryListener();
-        }
-      };
+      // Extract just the filename without the path, as the extension might store it differently
+      const filename = filePath.split('/').pop() || '';
       
-      // Set up a query listener to monitor for new documents
-      const setUpQueryListener = () => {
-        addDebugMessage('Setting up query listeners across multiple collections');
+      // Set up listeners across different collections and query methods
+      let unsubscribes: (() => void)[] = [];
+      
+      // First try a collection group query - this searches across ALL collections
+      try {
+        addDebugMessage('Setting up collection group query listeners');
         
-        const possibleCollections = [
-          'transcriptions',
-          'speech_transcriptions',
-          'speechToText',
-          'stt_results'
-        ];
-        
-        let listenerCount = 0;
-        for (const collName of possibleCollections) {
-          const transcriptionsRef = collection(db, collName);
-          
-          // Try different field names for the audio path
-          const fieldQueries = [
-            'audioPath',
-            'audio_path',
-            'filePath', 
-            'path',
-            'input'
-          ];
-          
-          fieldQueries.forEach(fieldName => {
-            listenerCount++;
+        // Function to create a query and listen for transcription results
+        const setupCollectionGroupQuery = (fieldName: string, value: string) => {
+          try {
             const q = query(
-              transcriptionsRef, 
-              where(fieldName, '==', filePath)
+              collectionGroup(db, 'transcriptions'),
+              where(fieldName, '==', value)
             );
             
-            addDebugMessage(`Setting up listener on ${collName} where ${fieldName} = ${filePath}`);
+            addDebugMessage(`Setting up collectionGroup query: ${fieldName}=${value}`);
             
             const unsubscribe = onSnapshot(q, (snapshot) => {
               if (!snapshot.empty) {
-                const doc = snapshot.docs[0];
-                const data = doc.data();
-                
-                addDebugMessage(`Found matching document in ${collName} with field ${fieldName}`);
-                
-                // Check if the transcription is complete
-                if (data.status === 'completed' || data.transcript) {
-                  const endTime = Date.now();
-                  setProcessingTimeMs(endTime - startTime);
+                addDebugMessage(`🎯 Found result with collectionGroup: ${fieldName}=${value}`);
+                snapshot.docs.forEach((doc, idx) => {
+                  const data = doc.data();
+                  addDebugMessage(`Result ${idx+1}: ${JSON.stringify(data).substring(0, 150)}...`);
                   
-                  // Unsubscribe from all listeners
-                  unsubscribe();
-                  
-                  // Parse and process the transcription data
-                  const filler_words = extractFillerWords(data.transcript || '');
-                  
-                  resolve({
-                    transcript: data.transcript || '',
-                    confidence: data.confidence || 0.9,
-                    fillerWords: {
-                      count: filler_words.length,
-                      words: filler_words.map(w => ({
-                        word: w.word,
-                        timestamp: w.timestamp
-                      }))
-                    }
-                  });
-                }
+                  // Check if it has transcript data
+                  if (data.transcript || data.transcription || data.results) {
+                    addDebugMessage(`✅ Found transcript data!`);
+                    
+                    // Extract transcript - different formats might store it differently
+                    const transcript = data.transcript || 
+                      data.transcription || 
+                      (data.results && data.results[0]?.alternatives[0]?.transcript) || 
+                      "";
+                    
+                    // Clean up all listeners
+                    unsubscribes.forEach(unsub => unsub());
+                    
+                    // Calculate processing time
+                    const endTime = Date.now();
+                    setProcessingTimeMs(endTime - startTime);
+                    
+                    // Process and return results
+                    const filler_words = extractFillerWords(transcript);
+                    resolve({
+                      transcript: transcript,
+                      confidence: 0.9, // Default if not available
+                      fillerWords: {
+                        count: filler_words.length,
+                        words: filler_words.map(w => ({
+                          word: w.word,
+                          timestamp: w.timestamp
+                        }))
+                      }
+                    });
+                  }
+                });
               }
             });
-          });
-        }
+            
+            unsubscribes.push(unsubscribe);
+          } catch (err) {
+            addDebugMessage(`Error setting up collection group query for ${fieldName}: ${err}`);
+          }
+        };
         
-        addDebugMessage(`Set up ${listenerCount} query listeners`);
-      };
+        // Try different field names with both full path and just filename
+        const fields = ['audio_file', 'filepath', 'path', 'uri'];
+        const values = [filePath, filename, `gs://speakbetter-dev-722cc.firebasestorage.app/${filePath}`];
+        
+        fields.forEach(field => {
+          values.forEach(value => {
+            setupCollectionGroupQuery(field, value);
+          });
+        });
+        
+        // For 'audio.uri' nested field, special handling
+        try {
+          const q = query(
+            collectionGroup(db, 'transcriptions'),
+            where('audio.uri', '==', `gs://speakbetter-dev-722cc.firebasestorage.app/${filePath}`)
+          );
+          
+          addDebugMessage(`Setting up collectionGroup query for nested field: audio.uri`);
+          
+          const unsubscribe = onSnapshot(q, (snapshot) => {
+            if (!snapshot.empty) {
+              addDebugMessage(`🎯 Found result with audio.uri query`);
+              // Handle match similar to above
+            }
+          });
+          
+          unsubscribes.push(unsubscribe);
+        } catch (err) {
+          addDebugMessage(`Error setting up collection group query for audio.uri: ${err}`);
+        }
+      } catch (err) {
+        addDebugMessage(`Error setting up collection group queries: ${err}`);
+      }
       
-      // Start by checking existing collections
-      checkExistingCollections();
+      // Set a timeout to avoid hanging indefinitely
+      const timeoutId = setTimeout(() => {
+        addDebugMessage('⚠️ Transcription timeout after 30 seconds');
+        addDebugMessage('No relevant collections found. You may need to ensure the Firebase Extension is properly configured.');
+        
+        // Clean up listeners
+        unsubscribes.forEach(unsub => unsub());
+        
+        reject(new Error('Transcription timed out. The Firebase Extension may not be properly configured or working.'));
+      }, 30000);
       
-      // Set a timeout in case the transcription takes too long
-      setTimeout(() => {
-        addDebugMessage('Transcription timed out after 60 seconds');
-        reject(new Error('Transcription timed out after 60 seconds'));
-      }, 60000);
+      // Add the timeout cleanup to unsubscribes
+      unsubscribes.push(() => clearTimeout(timeoutId));
     });
   };
 
@@ -292,26 +293,55 @@ const SpeechToTextLiveFixed: React.FC = () => {
       
       // Step 1: Upload the audio file to Firebase Storage
       addDebugMessage('Starting audio upload');
-      const filePath = await uploadAudioForTranscription(audioBlob);
-      setUploadPath(filePath);
-      
-      // Step 2: Wait for the Firebase Extension to process the file
-      // and store the results in Firestore
-      addDebugMessage('Audio uploaded, waiting for transcription');
-      const results = await listenForTranscriptionResults(filePath);
-      
-      addDebugMessage('Transcription complete');
-      setTranscriptionResults(results);
-      
-      // Calculate accuracy if reference text is provided
-      if (referenceText.trim()) {
-        const simpleAccuracy = calculateSimpleAccuracy(results.transcript, referenceText);
-        setAccuracyScore(simpleAccuracy);
+      let filePath;
+      try {
+        filePath = await uploadAudioForTranscription(audioBlob);
+        setUploadPath(filePath);
+      } catch (uploadError) {
+        addDebugMessage(`⚠️ Upload process failed: ${uploadError}`);
+        setError(`Upload or document creation failed: ${uploadError}`);
+        setTranscribing(false);
+        return; // Stop the process if upload fails
       }
       
+      // Step 2: Wait for the Firebase Extension to process the file
+      addDebugMessage('Audio uploaded, waiting for transcription');
+      
+      try {
+        const results = await listenForTranscriptionResults(filePath);
+        
+        addDebugMessage('✅ Transcription complete');
+        setTranscriptionResults(results);
+        
+        // Calculate accuracy if reference text is provided
+        if (referenceText.trim()) {
+          const simpleAccuracy = calculateSimpleAccuracy(results.transcript, referenceText);
+          setAccuracyScore(simpleAccuracy);
+        }
+      } catch (transcriptionError) {
+        console.error('Error during transcription:', transcriptionError);
+        addDebugMessage(`⚠️ Transcription failed: ${transcriptionError.message}`);
+        setError(`Transcription process failed: ${transcriptionError.message}`);
+        
+        // Additional diagnostics to help debug
+        addDebugMessage('Running diagnostics...');
+        try {
+          // Check if we can query the document directly
+          const diagResults = await getDocs(collection(db, 'transcriptions'));
+          addDebugMessage(`Found ${diagResults.size} transcription documents in total`);
+          
+          // Log some recent documents for debugging
+          diagResults.docs.slice(-3).forEach((doc, idx) => {
+            const data = doc.data();
+            addDebugMessage(`Recent document ${idx+1}: ID=${doc.id}, Data=${JSON.stringify(data).substring(0, 150)}...`);
+          });
+        } catch (diagError) {
+          addDebugMessage(`Diagnostics failed: ${diagError.message}`);
+        }
+      }
     } catch (err) {
       console.error('Error transcribing audio:', err);
-      addDebugMessage(`Error: ${err instanceof Error ? err.message : String(err)}`);
+      addDebugMessage(`⚠️ Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
       setError('Failed to transcribe audio: ' + (err instanceof Error ? err.message : String(err)));
     } finally {
       setTranscribing(false);
@@ -419,12 +449,12 @@ const SpeechToTextLiveFixed: React.FC = () => {
       
       {/* Debug info */}
       {debugInfo.length > 0 && (
-        <Accordion sx={{ mb: 3 }}>
+        <Accordion sx={{ mb: 3 }} defaultExpanded>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography>Debug Information</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Box sx={{ maxHeight: '200px', overflow: 'auto', bgcolor: '#f5f5f5', p: 2, borderRadius: 1 }}>
+            <Box sx={{ maxHeight: '300px', overflow: 'auto', bgcolor: '#f5f5f5', p: 2, borderRadius: 1 }}>
               {debugInfo.map((msg, idx) => (
                 <Typography key={idx} variant="body2" fontFamily="monospace" fontSize="0.85rem">
                   {msg}

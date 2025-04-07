@@ -79,9 +79,8 @@ const SpeechToTextLive: React.FC = () => {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
       
-      // This collection name should match what's configured in your Firebase Extension
-      // Check your extension settings if this needs to be adjusted
-      const transcriptionsRef = collection(db, 'speech_transcriptions');
+      // Updated to use the correct collection name from the Firebase Extension
+      const transcriptionsRef = collection(db, 'transcriptions');
       
       // Create a query to find the matching document
       // Note: Your extension might use a different structure - adjust accordingly

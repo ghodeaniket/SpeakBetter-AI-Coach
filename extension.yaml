@@ -1,0 +1,25 @@
+specVersion: v1beta
+name: speech-to-text-config
+version: 0.1.0
+resources:
+  - name: speech-to-text
+    type: firebaseextensions.v1beta.function
+    description: Firebase Extension for Speech-to-Text
+    properties:
+      location: us-central1
+      params:
+        COLLECTION_NAME: transcriptions
+        LANGUAGE_CODE: en-US
+        ENCODING: LINEAR16
+        SAMPLE_RATE_HERTZ: 16000
+        
+  - name: tts-api
+    type: firebaseextensions.v1beta.function
+    description: Firebase Extension for Text-to-Speech
+    properties:
+      location: us-central1
+      params:
+        COLLECTION_NAME: tts_requests
+        LANGUAGE_CODE: en-US
+        VOICE_NAME: en-US-Wavenet-F
+        AUDIO_ENCODING: MP3

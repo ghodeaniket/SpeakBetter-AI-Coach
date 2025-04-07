@@ -1,0 +1,13 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "extensions": {
+    "speech-to-text": "firebase/speech-to-text@0.1.4",
+    "tts-api": "firebase/tts-api@0.1.4"
+  }
+}

@@ -1,54 +1,99 @@
-# React + TypeScript + Vite
+# SpeakBetter AI Coach
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SpeakBetter AI Coach is an innovative web application that provides real-time AI-powered speech coaching to help users improve their communication skills. This repository contains the code for the Sprint 0 validation phase.
 
-Currently, two official plugins are available:
+## Project Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+SpeakBetter AI Coach uses Google Cloud services through Firebase Extensions to provide:
+- Real-time speech analysis with professional-quality feedback
+- Personalized coaching delivered through a natural-sounding AI voice
+- Focus on actionable improvement areas rather than just metrics
+- Seamless practice-feedback-improvement cycle
 
-## Expanding the ESLint configuration
+## Firebase Extensions Integration
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+This project uses two key Firebase Extensions:
+1. **Speech-to-Text**: Converts audio recordings to text for analysis
+2. **Text-to-Speech**: Generates natural-sounding voice feedback
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Getting Started
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Prerequisites
+- Node.js 18+ and npm
+- Firebase account with a configured project
+- Firebase Extensions installed and configured
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Installation
+1. Clone the repository
+   ```bash
+   git clone git@github.com:ghodeaniket/SpeakBetter-AI-Coach.git
+   cd SpeakBetter-AI-Coach
+   ```
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+
+3. Install Firebase Tools
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+4. Deploy Firebase configuration
+   ```bash
+   firebase login
+   firebase deploy --only firestore,storage,extensions
+   ```
+
+5. Start the development server
+   ```bash
+   npm run dev
+   ```
+
+### Testing the Firebase Extensions
+
+The application includes multiple implementations for testing Speech-to-Text integration:
+
+1. **Mock Implementation**: Uses simulated responses for UI testing
+2. **Live Implementation**: Direct integration with the Firebase Extension 
+3. **Fixed Version**: Improved implementation with better error handling
+4. **Direct Mode**: Alternative approach that creates documents directly
+5. **Enhanced Version**: Most robust implementation with:
+   - Collection auto-detection
+   - Multiple field name support
+   - Collection group queries
+   - Detailed debug logging
+   - Fallback mechanisms
+
+For detailed testing instructions, see the [Testing Guide](./TESTING.md).
+
+### Troubleshooting
+
+If you encounter issues with the Speech-to-Text integration, see [FIXES_APPLIED.md](./FIXES_APPLIED.md) for:
+- Common issues and their solutions
+- Technical details of fixes implemented
+- Debugging strategies
+
+## Technical Architecture
+
+The application is built with:
+- React with TypeScript
+- Material UI for components
+- Firebase services:
+  - Authentication
+  - Firestore
+  - Storage
+  - Extensions
+
+## Sprint 0 Validation
+
+The current branch focuses on validating the technical capabilities required for the SpeakBetter AI Coach:
+- WebRTC compatibility for audio recording
+- Speech-to-Text API accuracy and performance
+- Text-to-Speech quality for feedback delivery
+- Firebase Extensions integration
+
+## License
+
+[MIT](LICENSE)
