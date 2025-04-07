@@ -35,6 +35,7 @@ import CloudArchitectureTest from './validation/cloud-architecture/CloudArchitec
 // Import our live validation components
 import SpeechToTextLive from './validation/speech-to-text/SpeechToTextLive';
 import SpeechToTextLiveFixed from './validation/speech-to-text/SpeechToTextLiveFixed';
+import SpeechToTextWithDirect from './validation/speech-to-text/SpeechToTextWithDirect';
 import TextToSpeechLive from './validation/text-to-speech/TextToSpeechLive';
 
 // Create theme with the SpeakBetter color scheme
@@ -102,6 +103,8 @@ function App() {
         return <SpeechToTextLive />;
       case 'speech-to-text-live-fixed':
         return <SpeechToTextLiveFixed />;
+      case 'speech-to-text-direct':
+        return <SpeechToTextWithDirect />;
       case 'text-to-speech':
         return <TextToSpeechTest />;
       case 'text-to-speech-live':
@@ -242,6 +245,29 @@ function App() {
                           label="Fixed Version" 
                           size="small" 
                           color="success" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
+                  selected={activePage === 'speech-to-text-direct'}
+                  onClick={() => handlePageChange('speech-to-text-direct')}
+                >
+                  <ListItemIcon>
+                    <RecordVoiceOverIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Speech-to-Text
+                        <Chip 
+                          label="Direct Mode" 
+                          size="small" 
+                          color="warning" 
                           sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
                         />
                       </Box>
