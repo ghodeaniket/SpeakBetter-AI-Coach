@@ -4,9 +4,9 @@ import {
   transcribeAudio, 
   calculateSpeakingRate, 
   calculateClarityScore,
-  TranscriptionResult,
-  TranscriptionOptions
-} from '../../../services/google-cloud/speech';
+  TranscriptionResult
+} from '../../../services/google-cloud/api-key/speechToText';
+import { GOOGLE_CLOUD_API_KEY } from '../../../services/google-cloud/config';
 
 /**
  * Upload audio to Firebase Storage
@@ -57,6 +57,10 @@ export const processAudio = async (
   wordsPerMinute?: number,
   clarityScore: number
 }> => {
+  if (!GOOGLE_CLOUD_API_KEY) {
+    throw new Error('Google Cloud API key is not configured. Please add it to your environment variables.');
+  }
+  
   const startTime = Date.now();
   
   try {
@@ -69,16 +73,15 @@ export const processAudio = async (
     // Prepare audio content
     const audioContent = await prepareAudioContent(audioBlob);
     
-    // Transcribe using direct API call
-    const transcriptionOptions: TranscriptionOptions = {
-      audioContent,
-      languageCode: options.languageCode || 'en-US',
-      sampleRateHertz: 16000, // WebRTC typically uses 16 kHz
-      encoding: 'LINEAR16',
-      enableWordTimeOffsets: true,
-    };
-    
-    const transcriptionResult = await transcribeAudio(transcriptionOptions);
+    // Transcribe using API key-based implementation
+    const transcriptionResult = await transcribeAudio(
+      audioContent, 
+      GOOGLE_CLOUD_API_KEY, 
+      {
+        languageCode: options.languageCode || 'en-US',
+        enableWordTimeOffsets: true,
+      }
+    );
     
     // Calculate additional metrics
     const wordsPerMinute = calculateSpeakingRate(transcriptionResult);

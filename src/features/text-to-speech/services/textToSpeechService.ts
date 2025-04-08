@@ -3,11 +3,11 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   synthesizeSpeech, 
   audioContentToDataUrl, 
-  SynthesisOptions,
-  SynthesisResult,
+  availableVoices,
   VoiceOption,
-  availableVoices
-} from '../../../services/google-cloud/textToSpeech';
+  SynthesisOptions
+} from '../../../services/google-cloud/api-key/textToSpeech';
+import { GOOGLE_CLOUD_API_KEY } from '../../../services/google-cloud/config';
 
 /**
  * Save audio to Firebase Storage
@@ -49,6 +49,10 @@ export const generateSpeech = async (
   durationMs: number,
   processingTimeMs: number
 }> => {
+  if (!GOOGLE_CLOUD_API_KEY) {
+    throw new Error('Google Cloud API key is not configured. Please add it to your environment variables.');
+  }
+  
   const startTime = Date.now();
   
   try {
@@ -60,7 +64,8 @@ export const generateSpeech = async (
       useSSML: options.useSSML
     };
     
-    const result = await synthesizeSpeech(synthesisOptions);
+    // Call the API key-based implementation
+    const result = await synthesizeSpeech(synthesisOptions, GOOGLE_CLOUD_API_KEY);
     
     // Create data URL for immediate playback
     const dataUrl = audioContentToDataUrl(result.audioContent, result.contentType);
