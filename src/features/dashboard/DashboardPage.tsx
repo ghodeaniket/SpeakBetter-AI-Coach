@@ -37,7 +37,7 @@ const DashboardPage: React.FC = () => {
         
         {/* Quick Stats */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} lg={4}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" color="primary" gutterBottom>
@@ -62,7 +62,7 @@ const DashboardPage: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} lg={4}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" color="primary" gutterBottom>
@@ -87,7 +87,7 @@ const DashboardPage: React.FC = () => {
             </Card>
           </Grid>
           
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} lg={4}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="h6" color="primary" gutterBottom>
@@ -121,7 +121,7 @@ const DashboardPage: React.FC = () => {
           </Typography>
           
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} lg={6}>
               <Card variant="outlined" sx={{ mb: 2 }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
@@ -145,7 +145,7 @@ const DashboardPage: React.FC = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} lg={6}>
               <Card variant="outlined" sx={{ mb: 2 }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
@@ -169,7 +169,7 @@ const DashboardPage: React.FC = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} lg={6}>
               <Card variant="outlined" sx={{ mb: 2 }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
@@ -193,7 +193,7 @@ const DashboardPage: React.FC = () => {
               </Card>
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} lg={6}>
               <Card variant="outlined" sx={{ mb: 2 }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>

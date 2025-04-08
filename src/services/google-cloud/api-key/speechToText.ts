@@ -49,8 +49,8 @@ export const transcribeAudio = async (
   try {
     // Default parameters
     const defaultParams = {
-      encoding: 'LINEAR16',
-      sampleRateHertz: 16000,
+      encoding: 'WEBM_OPUS', // WebRTC typically uses WEBM_OPUS format
+      // Omit sampleRateHertz to let API auto-detect from header
       languageCode: 'en-US',
       model: 'default',
       enableAutomaticPunctuation: true,
@@ -63,11 +63,15 @@ export const transcribeAudio = async (
     // Merge with user-provided parameters
     const recognitionParams = { ...defaultParams, ...params };
     
+    // Remove sampleRateHertz if present to let API auto-detect it
+    if (recognitionParams.sampleRateHertz) {
+      delete recognitionParams.sampleRateHertz;
+    }
+    
     // Prepare the API request body
     const requestBody = {
       config: {
         encoding: recognitionParams.encoding,
-        sampleRateHertz: recognitionParams.sampleRateHertz,
         languageCode: recognitionParams.languageCode,
         model: recognitionParams.model,
         enableAutomaticPunctuation: recognitionParams.enableAutomaticPunctuation,

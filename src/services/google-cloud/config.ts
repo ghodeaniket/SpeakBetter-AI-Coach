@@ -2,6 +2,9 @@
  * Google Cloud API configuration
  */
 
+// Import debug module
+import './debug-env';
+
 // Get API key from environment variables
 export const GOOGLE_CLOUD_API_KEY = import.meta.env.VITE_GOOGLE_CLOUD_API_KEY;
 

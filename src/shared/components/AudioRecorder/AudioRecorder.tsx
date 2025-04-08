@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   Button, 
   Box, 
   Typography, 
   Paper, 
-  CircularProgress,
   Stack,
   Alert
 } from '@mui/material';
@@ -43,9 +42,20 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     clearRecording 
   } = recordingControls;
   
-  // Call onAudioCaptured when recording is completed
+  // Use a ref to track if we've already sent the recording
+  const hasCalledCaptureCallback = useRef(false);
+  
+  // Reset the callback flag when recording starts
   useEffect(() => {
-    if (status === 'completed' && audioBlob && onAudioCaptured) {
+    if (status === 'recording') {
+      hasCalledCaptureCallback.current = false;
+    }
+  }, [status]);
+  
+  // Call onAudioCaptured only once when recording completes
+  useEffect(() => {
+    if (status === 'completed' && audioBlob && onAudioCaptured && !hasCalledCaptureCallback.current) {
+      hasCalledCaptureCallback.current = true;
       onAudioCaptured(audioBlob);
     }
   }, [status, audioBlob, onAudioCaptured]);
@@ -172,9 +182,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               variant="outlined"
               color="primary"
               startIcon={<PlayArrowIcon />}
-              onClick={() => {
-                // Resume recording
-              }}
               sx={{ borderRadius: 28 }}
             >
               Resume

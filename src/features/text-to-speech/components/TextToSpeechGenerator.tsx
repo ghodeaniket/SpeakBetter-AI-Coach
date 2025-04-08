@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
+  Chip,
   Box,
   Button,
   Typography,
@@ -221,7 +222,7 @@ const TextToSpeechGenerator: React.FC = () => {
           <Typography variant="h6" gutterBottom>2. Voice Settings</Typography>
           
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} lg={6}>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" gutterBottom>Filter voices by:</Typography>
                 <Stack direction="row" spacing={1}>
@@ -267,7 +268,7 @@ const TextToSpeechGenerator: React.FC = () => {
               </FormControl>
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} lg={6}>
               <Typography gutterBottom>Speed</Typography>
               <Slider
                 value={speed}
@@ -285,7 +286,7 @@ const TextToSpeechGenerator: React.FC = () => {
               />
             </Grid>
             
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} lg={6}>
               <Typography gutterBottom>Pitch</Typography>
               <Slider
                 value={pitch}

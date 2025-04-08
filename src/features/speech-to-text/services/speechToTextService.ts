@@ -79,7 +79,9 @@ export const processAudio = async (
       GOOGLE_CLOUD_API_KEY, 
       {
         languageCode: options.languageCode || 'en-US',
-        enableWordTimeOffsets: true,
+        encoding: 'WEBM_OPUS',
+        enableWordTimeOffsets: true
+        // Intentionally omitting sampleRateHertz to allow API to auto-detect
       }
     );
     
