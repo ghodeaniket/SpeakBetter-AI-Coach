@@ -1,267 +1,398 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Container,
-  Typography,
-  Paper,
   Box,
+  Container,
   Grid,
+  Paper,
+  Typography,
+  Button,
   Card,
   CardContent,
-  Button,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
+  CardActions,
   Divider,
-  Stack,
-  Chip
+  CircularProgress,
+  LinearProgress,
+  useTheme,
 } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
+import SpeedIcon from '@mui/icons-material/Speed';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
-import VoiceChatIcon from '@mui/icons-material/VoiceChat';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import { useAuth } from '../authentication/context/AuthContext';
+import { getUserStats, getUserSessions, Session } from '../speech-analysis/services/sessionStorageService';
 
 const DashboardPage: React.FC = () => {
-  return (
-    <Container maxWidth="lg">
-      <Box sx={{ py: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          SpeakBetter AI Coach
-        </Typography>
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  
+  // State for user stats and sessions
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalSessions: 0,
+    averageClarityScore: 0,
+    averageWordsPerMinute: 0,
+    totalFillerWords: 0,
+    averageFillerPercentage: 0,
+    lastSessionDate: null as Date | null,
+  });
+  const [recentSessions, setRecentSessions] = useState<Session[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch user data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!currentUser) return;
+      
+      try {
+        setIsLoading(true);
+        setError(null);
         
-        <Typography variant="subtitle1" paragraph>
-          Improve your speaking skills with AI-powered analysis and feedback
-        </Typography>
+        // Fetch user stats
+        const userStats = await getUserStats(currentUser.uid);
+        setStats(userStats);
         
-        {/* Quick Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" color="primary" gutterBottom>
-                  Speech Analysis
-                </Typography>
-                <Typography variant="h3">
-                  0
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Practice sessions completed
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  sx={{ mt: 2 }}
-                  startIcon={<MicIcon />}
-                  href="/speech-to-text"
-                >
-                  Start Practice
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" color="primary" gutterBottom>
-                  Coach Feedback
-                </Typography>
-                <Typography variant="h3">
-                  0
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Feedback messages received
-                </Typography>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  sx={{ mt: 2 }}
-                  startIcon={<VoiceChatIcon />}
-                  href="/text-to-speech"
-                >
-                  Generate Feedback
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" color="primary" gutterBottom>
-                  Speaking Metrics
-                </Typography>
-                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                  <Chip label="Pace: 0 WPM" color="default" />
-                  <Chip label="Fillers: 0%" color="default" />
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  Your average speaking metrics
-                </Typography>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  sx={{ mt: 2 }}
-                  startIcon={<BarChartIcon />}
-                  disabled
-                >
-                  View Analytics
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-        
-        {/* Feature Overview */}
-        <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            Available Features
+        // Fetch recent sessions
+        const sessions = await getUserSessions(currentUser.uid, 3);
+        setRecentSessions(sessions);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError('Failed to load dashboard data. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [currentUser]);
+  
+  // Format date
+  const formatDate = (date: Date | null): string => {
+    if (!date) return 'N/A';
+    
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
+  };
+  
+  // Get color based on clarity score
+  const getClarityColor = (score: number) => {
+    if (score >= 80) return theme.palette.success.main;
+    if (score >= 60) return theme.palette.warning.main;
+    return theme.palette.error.main;
+  };
+  
+  // Get color based on filler percentage
+  const getFillerColor = (percentage: number) => {
+    if (percentage <= 5) return theme.palette.success.main;
+    if (percentage <= 10) return theme.palette.warning.main;
+    return theme.palette.error.main;
+  };
+  
+  // Handle new practice button click
+  const handleStartPractice = () => {
+    navigate('/practice');
+  };
+  
+  // Loading state
+  if (isLoading) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 8 }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
+          <Typography variant="h6" color="text.secondary">
+            Loading your dashboard...
           </Typography>
+        </Box>
+      </Container>
+    );
+  }
+  
+  // Error state
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Paper elevation={2} sx={{ p: 4, borderRadius: 2, mb: 4 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <ErrorOutlineIcon color="error" sx={{ fontSize: 40, mr: 2 }} />
+            <Typography variant="h5" color="error">
+              Error Loading Dashboard
+            </Typography>
+          </Box>
+          <Typography variant="body1" paragraph>
+            {error}
+          </Typography>
+          <Button variant="contained" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </Paper>
+      </Container>
+    );
+  }
+  
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Welcome section */}
+      <Paper elevation={2} sx={{ p: 4, borderRadius: 2, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box>
+            <Typography variant="h4" gutterBottom color="primary.main">
+              Welcome, {currentUser?.displayName?.split(' ')[0] || 'User'}!
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Track your progress and continue improving your speaking skills.
+            </Typography>
+          </Box>
+          
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<MicIcon />}
+            onClick={handleStartPractice}
+            sx={{ borderRadius: 28, px: 3 }}
+          >
+            Start Practice
+          </Button>
+        </Box>
+        
+        {stats.totalSessions === 0 ? (
+          <Box sx={{ mt: 4, p: 3, bgcolor: theme.palette.background.default, borderRadius: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Welcome to SpeakBetter AI Coach!
+            </Typography>
+            <Typography variant="body1" paragraph>
+              You haven't completed any practice sessions yet. Start your first session to begin tracking your progress.
+            </Typography>
+            <Button 
+              variant="outlined" 
+              color="primary" 
+              onClick={handleStartPractice}
+              startIcon={<MicIcon />}
+            >
+              Start Your First Session
+            </Button>
+          </Box>
+        ) : (
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Your Progress
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          bgcolor: 'primary.light',
+                          color: 'primary.contrastText',
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          mr: 2,
+                        }}
+                      >
+                        <MicIcon />
+                      </Box>
+                      <Typography variant="h6">Total Sessions</Typography>
+                    </Box>
+                    <Typography variant="h3" sx={{ mb: 1, fontWeight: 'bold' }}>
+                      {stats.totalSessions}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Last session: {formatDate(stats.lastSessionDate)}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          bgcolor: 'warning.light',
+                          color: 'warning.contrastText',
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          mr: 2,
+                        }}
+                      >
+                        <SpeedIcon />
+                      </Box>
+                      <Typography variant="h6">Speaking Rate</Typography>
+                    </Box>
+                    <Typography variant="h3" sx={{ mb: 1, fontWeight: 'bold' }}>
+                      {stats.averageWordsPerMinute ? Math.round(stats.averageWordsPerMinute) : '—'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      words per minute (average)
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              
+              <Grid item xs={12} md={4}>
+                <Card variant="outlined" sx={{ height: '100%' }}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          bgcolor: 'success.light',
+                          color: 'success.contrastText',
+                          width: 40,
+                          height: 40,
+                          borderRadius: '50%',
+                          mr: 2,
+                        }}
+                      >
+                        <RecordVoiceOverIcon />
+                      </Box>
+                      <Typography variant="h6">Clarity Score</Typography>
+                    </Box>
+                    <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                      <CircularProgress
+                        variant="determinate"
+                        value={stats.averageClarityScore}
+                        size={60}
+                        thickness={5}
+                        sx={{ color: getClarityColor(stats.averageClarityScore), mr: 2 }}
+                      />
+                      <Box
+                        sx={{
+                          top: 0,
+                          left: 0,
+                          bottom: 0,
+                          right: 0,
+                          position: 'absolute',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Typography variant="body1" fontWeight="bold">
+                          {Math.round(stats.averageClarityScore)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ ml: 2, display: 'inline-block' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Filler words: {stats.averageFillerPercentage.toFixed(1)}%
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(stats.averageFillerPercentage * 10, 100)}
+                        sx={{ 
+                          mt: 0.5, 
+                          height: 6, 
+                          borderRadius: 3,
+                          bgcolor: theme.palette.grey[200],
+                          '& .MuiLinearProgress-bar': {
+                            bgcolor: getFillerColor(stats.averageFillerPercentage)
+                          }
+                        }}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        )}
+      </Paper>
+      
+      {/* Recent sessions section */}
+      {recentSessions.length > 0 && (
+        <Paper elevation={2} sx={{ p: 4, borderRadius: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h5" color="primary.main">
+              Recent Practice Sessions
+            </Typography>
+            
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => navigate('/history')}
+            >
+              View All
+            </Button>
+          </Box>
           
           <Grid container spacing={3}>
-            <Grid item xs={12} lg={6}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <RecordVoiceOverIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="h6">Speech Analysis</Typography>
-                      <Typography variant="body2" paragraph>
-                        Record your speech and get detailed analysis including transcription, 
-                        filler word detection, and speaking rate.
-                      </Typography>
-                      <Button 
-                        variant="contained" 
-                        color="primary"
-                        href="/speech-to-text"
+            {recentSessions.map((session) => (
+              <Grid item xs={12} md={4} key={session.id}>
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                      {session.type.charAt(0).toUpperCase() + session.type.slice(1)} Practice
+                    </Typography>
+                    
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      {new Date(session.createdAt).toLocaleDateString()} • {Math.round(session.analysis.durationSeconds / 60)} min
+                    </Typography>
+                    
+                    <Divider sx={{ my: 1.5 }} />
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">Clarity Score:</Typography>
+                      <Typography 
+                        variant="body2" 
+                        fontWeight="bold"
+                        color={getClarityColor(session.analysis.clarityScore)}
                       >
-                        Try It
-                      </Button>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} lg={6}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <VoiceChatIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="h6">AI Coach Feedback</Typography>
-                      <Typography variant="body2" paragraph>
-                        Generate natural-sounding speech feedback with customizable voice, 
-                        speed, and pitch using advanced AI technology.
+                        {Math.round(session.analysis.clarityScore)}/100
                       </Typography>
-                      <Button 
-                        variant="contained" 
-                        color="primary"
-                        href="/text-to-speech"
-                      >
-                        Try It
-                      </Button>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} lg={6}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <TrendingUpIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="h6">Progress Tracking</Typography>
-                      <Typography variant="body2" paragraph>
-                        Track your improvement over time with detailed metrics and 
-                        visualization of your speaking patterns.
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">Words Per Minute:</Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {session.analysis.wordsPerMinute || '—'}
                       </Typography>
-                      <Button 
-                        variant="outlined" 
-                        color="primary"
-                        disabled
-                      >
-                        Coming Soon
-                      </Button>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} lg={6}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <TipsAndUpdatesIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="h6">Personalized Tips</Typography>
-                      <Typography variant="body2" paragraph>
-                        Receive tailored speaking improvement suggestions based on 
-                        your unique speaking patterns and goals.
+                    
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2">Filler Words:</Typography>
+                      <Typography 
+                        variant="body2" 
+                        fontWeight="bold"
+                        color={getFillerColor(session.analysis.fillerWords?.percentage || 0)}
+                      >
+                        {session.analysis.fillerWords?.count || 0} ({session.analysis.fillerWords?.percentage.toFixed(1) || '0.0'}%)
                       </Typography>
-                      <Button 
-                        variant="outlined" 
-                        color="primary"
-                        disabled
-                      >
-                        Coming Soon
-                      </Button>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
+                  </CardContent>
+                  
+                  <CardActions>
+                    <Button 
+                      size="small" 
+                      onClick={() => navigate(`/history/${session.id}`)}
+                      endIcon={<TrendingUpIcon fontSize="small" />}
+                    >
+                      View Details
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
         </Paper>
-        
-        {/* Getting Started */}
-        <Paper elevation={2} sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            Getting Started
-          </Typography>
-          
-          <List>
-            <ListItem>
-              <ListItemIcon>
-                <MicIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="1. Record Your Speech" 
-                secondary="Use the Speech Analysis feature to record a sample of your speaking"
-              />
-            </ListItem>
-            
-            <Divider component="li" />
-            
-            <ListItem>
-              <ListItemIcon>
-                <RecordVoiceOverIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="2. Review Your Analysis" 
-                secondary="Get detailed metrics about your speaking patterns including filler words and pace"
-              />
-            </ListItem>
-            
-            <Divider component="li" />
-            
-            <ListItem>
-              <ListItemIcon>
-                <VoiceChatIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="3. Generate Feedback" 
-                secondary="Use the AI Coach to create customized feedback based on your performance"
-              />
-            </ListItem>
-          </List>
-        </Paper>
-      </Box>
+      )}
     </Container>
   );
 };
