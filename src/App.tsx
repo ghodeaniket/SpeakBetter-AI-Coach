@@ -41,6 +41,9 @@ import TextToSpeechLiveFixed from './validation/text-to-speech/TextToSpeechLiveF
 import SpeechToTextEnhanced from './validation/speech-to-text/SpeechToTextEnhanced';
 import SpeechToTextTroubleshooter from './validation/speech-to-text/SpeechToTextTroubleshooter';
 
+// Import direct API components
+import { DirectSpeechToText, DirectTextToSpeech } from './validation/direct-api';
+
 // Create theme with the SpeakBetter color scheme
 const theme = createTheme({
   palette: {
@@ -112,12 +115,16 @@ function App() {
         return <SpeechToTextEnhanced />;
       case 'speech-to-text-troubleshooter':
         return <SpeechToTextTroubleshooter />;
+      case 'speech-to-text-direct-api':
+        return <DirectSpeechToText />;
       case 'text-to-speech':
         return <TextToSpeechTest />;
       case 'text-to-speech-live':
         return <TextToSpeechLive />;
       case 'text-to-speech-live-fixed':
         return <TextToSpeechLiveFixed />;
+      case 'text-to-speech-direct-api':
+        return <DirectTextToSpeech />;
       case 'cloud-architecture':
         return <CloudArchitectureTest />;
       default:
@@ -332,6 +339,29 @@ function App() {
               </ListItem>
               <ListItem disablePadding>
                 <ListItemButton 
+                  selected={activePage === 'speech-to-text-direct-api'}
+                  onClick={() => handlePageChange('speech-to-text-direct-api')}
+                >
+                  <ListItemIcon>
+                    <RecordVoiceOverIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Speech-to-Text
+                        <Chip 
+                          label="Direct API" 
+                          size="small" 
+                          color="info" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
                   selected={activePage === 'text-to-speech'}
                   onClick={() => handlePageChange('text-to-speech')}
                 >
@@ -392,6 +422,29 @@ function App() {
                           label="Fixed Version" 
                           size="small" 
                           color="success" 
+                          sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
+                        />
+                      </Box>
+                    } 
+                  />
+                </ListItemButton>
+              </ListItem>
+              <ListItem disablePadding>
+                <ListItemButton 
+                  selected={activePage === 'text-to-speech-direct-api'}
+                  onClick={() => handlePageChange('text-to-speech-direct-api')}
+                >
+                  <ListItemIcon>
+                    <VoiceChatIcon />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        Text-to-Speech
+                        <Chip 
+                          label="Direct API" 
+                          size="small" 
+                          color="info" 
                           sx={{ ml: 1, height: 20, fontSize: '0.7rem' }} 
                         />
                       </Box>
@@ -468,9 +521,13 @@ const DashboardPage = () => {
           ✨ New Enhanced Speech-to-Text Component Added: The enhanced implementation provides better compatibility with different Firebase Extension configurations and improved debugging.
         </Typography>
         
+        <Typography variant="body1" paragraph color="info.main" fontWeight="bold">
+          🔄 New Direct API Implementation: We've added direct Google Cloud API implementation for both Speech-to-Text and Text-to-Speech, bypassing Firebase Extensions for more control and reliability.
+        </Typography>
+        
         <Typography variant="body1" paragraph>
           We now have both mock and live implementations available for testing. The live components
-          connect to the actual Google Cloud APIs through Firebase Extensions.
+          connect to the actual Google Cloud APIs through Firebase Extensions or directly.
         </Typography>
         
         <Typography variant="h6" gutterBottom>
@@ -492,7 +549,7 @@ const DashboardPage = () => {
               <RecordVoiceOverIcon color="primary" />
             </ListItemIcon>
             <ListItemText 
-              primary="Speech-to-Text Test (Mock, Live & Fixed)" 
+              primary="Speech-to-Text Test (Multiple Implementations)" 
               secondary="Tests Google Cloud Speech-to-Text API for transcription accuracy"
             />
           </ListItem>
@@ -501,7 +558,7 @@ const DashboardPage = () => {
               <VoiceChatIcon color="primary" />
             </ListItemIcon>
             <ListItemText 
-              primary="Text-to-Speech Test (Mock & Live)" 
+              primary="Text-to-Speech Test (Multiple Implementations)" 
               secondary="Evaluates Google Cloud Text-to-Speech for natural feedback voices"
             />
           </ListItem>
@@ -536,7 +593,7 @@ const DashboardPage = () => {
             <ListItemText primary="✅ Measure end-to-end processing latency" />
           </ListItem>
           <ListItem>
-            <ListItemText primary="✅ Validate Firebase Extensions for speech processing" />
+            <ListItemText primary="✅ Validate direct integration with Google Cloud APIs" />
           </ListItem>
         </List>
       </Paper>
