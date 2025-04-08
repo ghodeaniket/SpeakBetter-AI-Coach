@@ -24,8 +24,6 @@ import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import VoiceChatIcon from '@mui/icons-material/VoiceChat';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { SpeechProvider } from '../../contexts/SpeechContext';
-import { UserProfile } from '../../../features/auth/components';
-import { useAuth } from '../../contexts/AuthContext';
 
 // Create theme with the SpeakBetter color scheme
 const theme = createTheme({
@@ -75,7 +73,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
-  const { currentUser } = useAuth();
   
   const drawerWidth = 240;
 
@@ -153,19 +150,14 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 SpeakBetter AI Coach
               </Typography>
               
-              {currentUser && (
-                <IconButton 
-                  color="inherit" 
-                  aria-label="start practice"
-                  component={Link}
-                  to="/speech-to-text"
-                  sx={{ mr: 2 }}
-                >
-                  <MicIcon />
-                </IconButton>
-              )}
-              
-              <UserProfile compact />
+              <IconButton 
+                color="inherit" 
+                aria-label="start practice"
+                component={Link}
+                to="/speech-to-text"
+              >
+                <MicIcon />
+              </IconButton>
             </Toolbar>
           </AppBar>
           
