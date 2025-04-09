@@ -270,37 +270,49 @@ const TextToSpeechGenerator: React.FC = () => {
             
             <Grid item xs={12} lg={6}>
               <Typography gutterBottom>Speed</Typography>
-              <Slider
-                value={speed}
-                min={0.25}
-                max={4.0}
-                step={0.05}
-                marks={[
-                  { value: 0.25, label: '0.25x' },
-                  { value: 1, label: '1x' },
-                  { value: 2, label: '2x' },
-                  { value: 4, label: '4x' }
-                ]}
-                valueLabelDisplay="auto"
-                onChange={(_, newValue) => setSpeed(newValue as number)}
-              />
+              <Box sx={{ px: 2 }}>
+                <Slider
+                  value={speed}
+                  min={0.25}
+                  max={4.0}
+                  step={0.05}
+                  marks={[
+                    { value: 1, label: '1x' }
+                  ]}
+                  valueLabelDisplay="auto"
+                  onChange={(_, newValue) => setSpeed(newValue as number)}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 2, mt: 1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>0.25x</Typography>
+                <Typography variant="caption" color="text.secondary">2x</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>4x</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 4, mt: 1 }}>
+                <Typography variant="caption" color="text.secondary">Slower</Typography>
+                <Typography variant="caption" color="text.secondary">Faster</Typography>
+              </Box>
             </Grid>
             
             <Grid item xs={12} lg={6}>
               <Typography gutterBottom>Pitch</Typography>
-              <Slider
-                value={pitch}
-                min={-20}
-                max={20}
-                step={1}
-                marks={[
-                  { value: -20, label: 'Lower' },
-                  { value: 0, label: 'Normal' },
-                  { value: 20, label: 'Higher' }
-                ]}
-                valueLabelDisplay="auto"
-                onChange={(_, newValue) => setPitch(newValue as number)}
-              />
+              <Box sx={{ px: 2 }}>
+                <Slider
+                  value={pitch}
+                  min={-20}
+                  max={20}
+                  step={1}
+                  marks={[
+                    { value: 0, label: 'Normal' }
+                  ]}
+                  valueLabelDisplay="auto"
+                  onChange={(_, newValue) => setPitch(newValue as number)}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 4, mt: 1 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>Lower</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>Higher</Typography>
+              </Box>
             </Grid>
           </Grid>
         </Paper>

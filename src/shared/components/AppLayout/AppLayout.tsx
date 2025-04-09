@@ -159,9 +159,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       path: '/speech-to-text',
     },
     {
-      text: 'AI Coach Feedback',
+      text: 'AI Feedback',
       icon: <VoiceChatIcon />,
-      path: '/text-to-speech',
+      path: '/feedback',
     },
     {
       text: 'Session History',

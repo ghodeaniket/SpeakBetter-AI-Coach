@@ -47,6 +47,9 @@ const SpeechToTextAnalyzer: React.FC = () => {
   // Auth hook
   const { userProfile } = useAuth();
   
+  // Access speech context for storing global state
+  const { state, dispatch } = useSpeech();
+  
   // Session management hook
   const { 
     currentSession, 
@@ -148,6 +151,10 @@ const SpeechToTextAnalyzer: React.FC = () => {
       if (result.audioUrl) {
         setAudioUrl(result.audioUrl);
       }
+      
+      // Store results in speech context for feedback generation
+      dispatch({ type: 'SET_TRANSCRIPTION_RESULT', payload: result.transcriptionResult });
+      dispatch({ type: 'SET_AUDIO_URL', payload: result.audioUrl || audioUrl });
       
       // If we have a session, update it with the analysis results
       if (sessionId) {
@@ -364,6 +371,15 @@ const SpeechToTextAnalyzer: React.FC = () => {
                   <Typography variant="body1" sx={{ mb: 2, fontWeight: 'medium' }}>
                     {transcriptionResults.transcript}
                   </Typography>
+                  
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => navigate('/feedback')}
+                    sx={{ mb: 2 }}
+                  >
+                    View AI Coach Feedback
+                  </Button>
                   
                   <Divider sx={{ my: 2 }} />
                   

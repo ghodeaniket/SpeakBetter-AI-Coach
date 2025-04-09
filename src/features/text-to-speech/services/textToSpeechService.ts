@@ -16,18 +16,36 @@ export const saveAudioToStorage = async (
   audioContent: Uint8Array, 
   prefix: string = 'tts_audio'
 ): Promise<string> => {
+  if (!audioContent || !(audioContent instanceof Uint8Array)) {
+    console.error('Invalid audioContent - must be a Uint8Array', typeof audioContent);
+    throw new Error('Invalid audio content format');
+  }
+  
   try {
+    // Generate a unique filename
     const timestamp = new Date().getTime();
     const fileName = `${prefix}/speech_${timestamp}.mp3`;
+    
+    // Log for debugging
+    console.log(`Saving audio to Firebase Storage: ${fileName}, content size: ${audioContent.length} bytes`);
+    
+    // Create storage reference
     const storageRef = ref(storage, fileName);
     
-    await uploadBytes(storageRef, audioContent);
+    // Create a Blob from the Uint8Array to ensure proper upload
+    const blob = new Blob([audioContent], { type: 'audio/mp3' });
     
+    // Upload the blob
+    const uploadResult = await uploadBytes(storageRef, blob);
+    console.log('Upload successful:', uploadResult.metadata.name);
+    
+    // Get the download URL
     const url = await getDownloadURL(storageRef);
     return url;
   } catch (error) {
-    console.error('Error saving audio:', error);
-    throw error;
+    console.error('Error saving audio to storage:', error);
+    // Return a data URL as fallback so app continues working
+    return audioContentToDataUrl(audioContent, 'audio/mp3');
   }
 };
 
@@ -38,7 +56,7 @@ export const generateSpeech = async (
   text: string,
   options: {
     voiceId?: string,
-    speed?: number,
+    speakingRate?: number,
     pitch?: number,
     useSSML?: boolean,
     saveToStorage?: boolean
@@ -59,7 +77,7 @@ export const generateSpeech = async (
     const synthesisOptions: SynthesisOptions = {
       text,
       voiceId: options.voiceId,
-      speakingRate: options.speed,
+      speakingRate: options.speakingRate,
       pitch: options.pitch,
       useSSML: options.useSSML
     };
@@ -67,13 +85,25 @@ export const generateSpeech = async (
     // Call the API key-based implementation
     const result = await synthesizeSpeech(synthesisOptions, GOOGLE_CLOUD_API_KEY);
     
+    if (!result || !result.audioContent) {
+      console.error('No valid audio content received from synthesis');
+      throw new Error('Failed to generate speech: No audio content received');
+    }
+    
+    console.log(`Received audio content of size: ${result.audioContent.length} bytes`);
+    
     // Create data URL for immediate playback
     const dataUrl = audioContentToDataUrl(result.audioContent, result.contentType);
     
     // Optionally save to Firebase Storage
     let storageUrl = dataUrl;
-    if (options.saveToStorage) {
-      storageUrl = await saveAudioToStorage(result.audioContent);
+    if (options.saveToStorage && result.audioContent) {
+      try {
+        storageUrl = await saveAudioToStorage(result.audioContent);
+      } catch (storageError) {
+        console.warn('Failed to save to storage, using data URL as fallback:', storageError);
+        // Continue with data URL if storage fails
+      }
     }
     
     return {

@@ -4,6 +4,7 @@ import AppLayout from '../components/AppLayout/AppLayout';
 import Dashboard from '../../features/dashboard';
 import { SpeechToTextAnalyzer } from '../../features/speech-to-text/components';
 import { TextToSpeechGenerator } from '../../features/text-to-speech/components';
+import { FeedbackPage } from '../../features/feedback';
 import { SessionHistoryPage } from '../../features/session-management';
 import { LoginPage } from '../../features/auth/pages';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -68,6 +69,16 @@ const Routes: React.FC = () => {
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <TextToSpeechGenerator />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/feedback"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <FeedbackPage />
                 </Suspense>
               </AppLayout>
             }
