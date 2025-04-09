@@ -69,3 +69,18 @@ const SpeechToTextDirect: React.FC = () => {
       
       addDebugMessage(`Uploading audio to ${fileName}...`);
       
+      // Upload the audio file
+      await uploadBytes(storageRef, blob);
+      
+      // Get the download URL
+      const url = await getDownloadURL(storageRef);
+      addDebugMessage(`Audio uploaded successfully, URL: ${url}`);
+      return url;
+    } catch (error) {
+      console.error('Error uploading audio:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      addDebugMessage(`Upload error: ${errorMessage}`);
+      throw new Error(`Failed to upload audio: ${errorMessage}`);
+    }
+  };
+      
