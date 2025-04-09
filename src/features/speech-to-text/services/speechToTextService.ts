@@ -183,12 +183,13 @@ export const processAudio = async (
     const audioContent = await prepareAudioContent(audioBlob);
     
     // Transcribe using API key-based implementation
+    // Let the API auto-detect encoding from the WAV header
     const transcriptionResult = await transcribeAudio(
       audioContent, 
       GOOGLE_CLOUD_API_KEY, 
       {
         languageCode,
-        encoding: 'WEBM_OPUS',
+        // Removed explicit encoding setting to let API auto-detect
         enableWordTimeOffsets: true,
         enableWordConfidence: true,
         enableAutomaticPunctuation: true

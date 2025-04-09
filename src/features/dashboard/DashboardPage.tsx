@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -14,254 +15,261 @@ import {
   ListItemText,
   Divider,
   Stack,
-  Chip
+  Tabs,
+  Tab,
+  Fade,
+  Zoom,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
 import VoiceChatIcon from '@mui/icons-material/VoiceChat';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import HistoryIcon from '@mui/icons-material/History';
+import AutoGraphIcon from '@mui/icons-material/AutoGraph';
+import SchoolIcon from '@mui/icons-material/School';
+import FeedbackIcon from '@mui/icons-material/Feedback';
+import TuneIcon from '@mui/icons-material/Tune';
+
+import { useAuth } from '../../shared/contexts/AuthContext';
+import { SessionList } from '../session-management';
+import { useSessionManagement } from '../session-management/hooks/useSessionManagement';
+import { OnboardingTips } from '../auth/components';
+import { 
+  ProgressTrackingWidget,
+  RecentSessionsWidget,
+  QuickActionCard
+} from './components';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`dashboard-tabpanel-${index}`}
+      aria-labelledby={`dashboard-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ pt: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
 
 const DashboardPage: React.FC = () => {
+  // Removed tabValue state as we now use proper routes for navigation
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { userProfile } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  // Removed tab parameter handling as we now use proper routes for navigation
+  
+  const {
+    sessions,
+    isLoading,
+    error,
+    createNewSession,
+    loadSession,
+    removeSession
+  } = useSessionManagement({ userId: userProfile?.uid || null });
+  
+  // Check if we should show onboarding based on session count
+  useEffect(() => {
+    // Show onboarding for new users with 2 or fewer sessions
+    if (sessions.length <= 2 && !isLoading) {
+      setShowOnboarding(true);
+    } else {
+      setShowOnboarding(false);
+    }
+  }, [sessions.length, isLoading]);
+
+  // Removed tab change handler as we now use proper routes for navigation
+
+  const handleSessionSelect = (sessionId: string) => {
+    // Prevent multiple navigation calls
+    if (sessionId) {
+      navigate(`/speech-to-text?sessionId=${sessionId}`, { 
+        replace: true  // Use replace to prevent adding extra history entries
+      });
+    }
+  };
+
+  const handleSessionCreate = async (type: 'freestyle' | 'guided' | 'qa') => {
+    try {
+      const sessionId = await createNewSession(type);
+      navigate(`/speech-to-text?sessionId=${sessionId}`);
+    } catch (error) {
+      console.error('Error creating session:', error);
+    }
+  };
+  
+  // Calculate stats for the overview cards
+  const completedSessions = sessions.filter(s => s.status === 'completed').length;
+  const feedbackCount = sessions.filter(s => s.hasFeedback).length;
+  
   return (
     <Container maxWidth="lg">
-      <Box sx={{ py: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          SpeakBetter AI Coach
-        </Typography>
-        
-        <Typography variant="subtitle1" paragraph>
-          Improve your speaking skills with AI-powered analysis and feedback
-        </Typography>
-        
-        {/* Quick Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" color="primary" gutterBottom>
-                  Speech Analysis
-                </Typography>
-                <Typography variant="h3">
-                  0
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Practice sessions completed
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  sx={{ mt: 2 }}
-                  startIcon={<MicIcon />}
-                  href="/speech-to-text"
-                >
-                  Start Practice
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
+      <Fade in={true} timeout={500}>
+        <Box sx={{ py: 4 }}>
+          {/* Header */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h4" gutterBottom fontWeight="500">
+              SpeakBetter AI Coach
+            </Typography>
+            
+            <Typography variant="subtitle1" color="text.secondary">
+              Improve your speaking skills with AI-powered analysis and feedback
+            </Typography>
+          </Box>
           
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" color="primary" gutterBottom>
-                  Coach Feedback
-                </Typography>
-                <Typography variant="h3">
-                  0
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Feedback messages received
-                </Typography>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  sx={{ mt: 2 }}
-                  startIcon={<VoiceChatIcon />}
-                  href="/text-to-speech"
-                >
-                  Generate Feedback
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
+          {/* Onboarding Tips for new users */}
+          {showOnboarding && (
+            <Zoom in={showOnboarding} timeout={500}>
+              <Box sx={{ mb: 4 }}>
+                <OnboardingTips onDismiss={() => setShowOnboarding(false)} />
+              </Box>
+            </Zoom>
+          )}
           
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" color="primary" gutterBottom>
-                  Speaking Metrics
-                </Typography>
-                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                  <Chip label="Pace: 0 WPM" color="default" />
-                  <Chip label="Fillers: 0%" color="default" />
-                </Stack>
-                <Typography variant="body2" color="text.secondary">
-                  Your average speaking metrics
-                </Typography>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  sx={{ mt: 2 }}
-                  startIcon={<BarChartIcon />}
-                  disabled
-                >
-                  View Analytics
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-        
-        {/* Feature Overview */}
-        <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            Available Features
-          </Typography>
+          {/* Test navigation buttons removed */}
           
-          <Grid container spacing={3}>
-            <Grid item xs={12} lg={6}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <RecordVoiceOverIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="h6">Speech Analysis</Typography>
-                      <Typography variant="body2" paragraph>
-                        Record your speech and get detailed analysis including transcription, 
-                        filler word detection, and speaking rate.
-                      </Typography>
-                      <Button 
-                        variant="contained" 
-                        color="primary"
-                        href="/speech-to-text"
-                      >
-                        Try It
-                      </Button>
+          <Paper elevation={2} sx={{ mt: 4 }}>
+            {/* Session history is now handled by the sidebar navigation
+               to avoid duplicate UI patterns and confusion */}
+            <Box sx={{ p: 3 }}>
+              {/* Dashboard content */}
+              <Grid container spacing={3}>
+                  {/* Left column */}
+                  <Grid item xs={12} lg={8}>
+                    {/* Quick stats row */}
+                    <Grid container spacing={2} sx={{ mb: 3 }}>
+                      <Grid item xs={12} lg={6}>
+                        <Card elevation={1} sx={{ 
+                          height: '100%',
+                          background: 'linear-gradient(to right, #4A55A2, #7986CB)',
+                          color: 'white' 
+                        }}>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                borderRadius: '50%',
+                                width: 40,
+                                height: 40,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mr: 2
+                              }}>
+                                <MicIcon />
+                              </Box>
+                              <Box>
+                                <Typography variant="overline" sx={{ opacity: 0.7 }}>
+                                  Completed Sessions
+                                </Typography>
+                                <Typography variant="h4">
+                                  {completedSessions}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            
+                            <Button 
+                              variant="contained" 
+                              sx={{ 
+                                mt: 2,
+                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                '&:hover': {
+                                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                }
+                              }}
+                              startIcon={<MicIcon />}
+                              onClick={() => handleSessionCreate('freestyle')}
+                            >
+                              Start Practice
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                      
+                      <Grid xs={12} lg={6}>
+                        <Card elevation={1} sx={{ height: '100%' }}>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                              <Box sx={{ 
+                                backgroundColor: 'rgba(74, 85, 162, 0.1)',
+                                borderRadius: '50%',
+                                width: 40,
+                                height: 40,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                mr: 2,
+                                color: 'primary.main'
+                              }}>
+                                <FeedbackIcon />
+                              </Box>
+                              <Box>
+                                <Typography variant="overline" color="text.secondary">
+                                  AI Feedback
+                                </Typography>
+                                <Typography variant="h4" color="primary.main">
+                                  {feedbackCount}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            
+                            <Button 
+                              variant="outlined" 
+                              color="primary" 
+                              sx={{ mt: 2 }}
+                              startIcon={<VoiceChatIcon />}
+                              onClick={() => navigate('/text-to-speech')}
+                            >
+                              Get Feedback
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    </Grid>
+
+                    {/* Recent sessions */}
+                    <Box sx={{ mb: 3 }}>
+                      <RecentSessionsWidget 
+                        sessions={sessions}
+                        isLoading={isLoading}
+                        onCreateSession={handleSessionCreate}
+                      />
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} lg={6}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <VoiceChatIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="h6">AI Coach Feedback</Typography>
-                      <Typography variant="body2" paragraph>
-                        Generate natural-sounding speech feedback with customizable voice, 
-                        speed, and pitch using advanced AI technology.
-                      </Typography>
-                      <Button 
-                        variant="contained" 
-                        color="primary"
-                        href="/text-to-speech"
-                      >
-                        Try It
-                      </Button>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} lg={6}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <TrendingUpIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="h6">Progress Tracking</Typography>
-                      <Typography variant="body2" paragraph>
-                        Track your improvement over time with detailed metrics and 
-                        visualization of your speaking patterns.
-                      </Typography>
-                      <Button 
-                        variant="outlined" 
-                        color="primary"
-                        disabled
-                      >
-                        Coming Soon
-                      </Button>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-            
-            <Grid item xs={12} lg={6}>
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                    <TipsAndUpdatesIcon color="primary" sx={{ fontSize: 40, mr: 2 }} />
-                    <Box>
-                      <Typography variant="h6">Personalized Tips</Typography>
-                      <Typography variant="body2" paragraph>
-                        Receive tailored speaking improvement suggestions based on 
-                        your unique speaking patterns and goals.
-                      </Typography>
-                      <Button 
-                        variant="outlined" 
-                        color="primary"
-                        disabled
-                      >
-                        Coming Soon
-                      </Button>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Paper>
-        
-        {/* Getting Started */}
-        <Paper elevation={2} sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            Getting Started
-          </Typography>
-          
-          <List>
-            <ListItem>
-              <ListItemIcon>
-                <MicIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="1. Record Your Speech" 
-                secondary="Use the Speech Analysis feature to record a sample of your speaking"
-              />
-            </ListItem>
-            
-            <Divider component="li" />
-            
-            <ListItem>
-              <ListItemIcon>
-                <RecordVoiceOverIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="2. Review Your Analysis" 
-                secondary="Get detailed metrics about your speaking patterns including filler words and pace"
-              />
-            </ListItem>
-            
-            <Divider component="li" />
-            
-            <ListItem>
-              <ListItemIcon>
-                <VoiceChatIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText 
-                primary="3. Generate Feedback" 
-                secondary="Use the AI Coach to create customized feedback based on your performance"
-              />
-            </ListItem>
-          </List>
-        </Paper>
-      </Box>
+                    
+                    {/* Rest of the dashboard content */}
+                  </Grid>
+                  
+                  {/* Right column */}
+                  <Grid item xs={12} lg={4}>
+                    <ProgressTrackingWidget sessions={sessions} />
+                    {/* Other widgets */}
+                  </Grid>
+                </Grid>
+            </Box>
+          </Paper>
+        </Box>
+      </Fade>
     </Container>
   );
 };

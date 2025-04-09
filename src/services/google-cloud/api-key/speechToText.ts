@@ -73,8 +73,7 @@ export const transcribeAudio = async (
   try {
     // Default parameters
     const defaultParams = {
-      encoding: 'WEBM_OPUS', // WebRTC typically uses WEBM_OPUS format
-      // Omit sampleRateHertz to let API auto-detect from header
+      // Don't set encoding by default - let API detect it from audio headers
       languageCode: 'en-US',
       model: 'default',
       enableAutomaticPunctuation: true,

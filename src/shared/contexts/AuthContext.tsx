@@ -1,13 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { 
   User,
-  GoogleAuthProvider, 
   signInWithPopup, 
   signOut, 
   onAuthStateChanged
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../../firebase';
+import { auth, googleProvider, db } from '../../firebase';
 
 // Define the user profile shape
 export interface UserProfile {
@@ -117,10 +116,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const signInWithGoogle = async (): Promise<UserProfile | null> => {
     try {
       setError(null);
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
+      // Use the pre-configured googleProvider
+      const { browserPopupRedirectResolver } = await import('firebase/auth');
+      const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
       
       // User profile will be updated by the auth state listener
+      await fetchUserProfile(result.user);
       return userProfile;
     } catch (err) {
       console.error('Error signing in with Google:', err);

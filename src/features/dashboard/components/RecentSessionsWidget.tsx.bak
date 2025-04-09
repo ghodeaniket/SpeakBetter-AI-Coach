@@ -23,7 +23,6 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { useNavigate } from 'react-router-dom';
 import { Session } from '../../session-management/services/sessionService';
-import { Timestamp } from 'firebase/firestore';
 
 interface RecentSessionsWidgetProps {
   sessions: Session[];
@@ -38,14 +37,9 @@ const RecentSessionsWidget: React.FC<RecentSessionsWidgetProps> = ({
 }) => {
   const navigate = useNavigate();
   
-  // Convert Firestore Timestamp to Date if needed and sort by createdAt
+  // Only show the most recent 3 sessions
   const recentSessions = [...sessions]
-    .sort((a, b) => {
-      // Handle both Date objects and Firestore Timestamps
-      const dateA = a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate();
-      const dateB = b.createdAt instanceof Date ? b.createdAt : b.createdAt.toDate();
-      return dateB.getTime() - dateA.getTime();
-    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 3);
   
   const handleSessionClick = (sessionId: string) => {
@@ -61,14 +55,11 @@ const RecentSessionsWidget: React.FC<RecentSessionsWidgetProps> = ({
   };
   
   const handleViewAllClick = () => {
-    navigate('/history');
+    navigate('/?tab=history');
   };
   
   // Helper to format date
-  const formatDate = (dateInput: Date | any) => {
-    // Convert Firestore Timestamp to Date if needed
-    const date = dateInput instanceof Date ? dateInput : dateInput.toDate();
-    
+  const formatDate = (date: Date) => {
     // If today, show "Today at HH:MM"
     const today = new Date();
     if (

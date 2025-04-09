@@ -13,7 +13,11 @@ import {
   Slider,
   Collapse,
   Backdrop,
-  CircularProgress
+  CircularProgress,
+  Menu,
+  MenuItem,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
@@ -23,17 +27,22 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SettingsVoiceIcon from '@mui/icons-material/SettingsVoice';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import WarningIcon from '@mui/icons-material/Warning';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ViewWeekIcon from '@mui/icons-material/ViewWeek';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import CircleIcon from '@mui/icons-material/Circle';
 import { useAudioRecording, AudioQualityInfo } from '../../hooks/useAudioRecording';
 import AudioVisualizer from './AudioVisualizer';
 
 export interface AudioRecorderProps {
-  onAudioCaptured?: (audioBlob: Blob) => void;
+  onAudioCaptured?: (audioBlob: Blob, duration: number) => void;
   maxDuration?: number; // Maximum recording duration in seconds
   showQualityFeedback?: boolean;
   showAudioControls?: boolean;
   autoStart?: boolean;
   mimeType?: string;
   compressionEnabled?: boolean;
+  visualizerStyle?: 'bars' | 'wave' | 'dots';
 }
 
 const AudioRecorder: React.FC<AudioRecorderProps> = ({ 
@@ -43,7 +52,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   showAudioControls = true,
   autoStart = false,
   mimeType = 'audio/webm',
-  compressionEnabled = true
+  compressionEnabled = true,
+  visualizerStyle: initialVisualizerStyle = 'bars'
 }) => {
   const [recordingState, recordingControls] = useAudioRecording({
     maxDuration,
@@ -70,12 +80,14 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     clearRecording 
   } = recordingControls;
   
-  // Local audio playback control
+  // Local state
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [volume, setVolume] = useState(1);
   const [showDetails, setShowDetails] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [visualizerStyle, setVisualizerStyle] = useState<'bars' | 'wave' | 'dots'>(initialVisualizerStyle);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   
   // Audio element reference
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -94,9 +106,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   useEffect(() => {
     if (status === 'completed' && audioBlob && onAudioCaptured && !hasCalledCaptureCallback.current) {
       hasCalledCaptureCallback.current = true;
-      onAudioCaptured(audioBlob);
+      onAudioCaptured(audioBlob, duration);
     }
-  }, [status, audioBlob, onAudioCaptured]);
+  }, [status, audioBlob, onAudioCaptured, duration]);
   
   // Set up audio playback tracking
   useEffect(() => {
@@ -230,6 +242,26 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     }
   };
   
+  // Handle visualizer style change
+  const handleVisualizerStyleChange = (
+    _: React.MouseEvent<HTMLElement>,
+    newStyle: 'bars' | 'wave' | 'dots',
+  ) => {
+    if (newStyle !== null) {
+      setVisualizerStyle(newStyle);
+    }
+  };
+  
+  // Handle menu open
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchorEl(event.currentTarget);
+  };
+  
+  // Handle menu close
+  const handleMenuClose = () => {
+    setMenuAnchorEl(null);
+  };
+  
   return (
     <Paper 
       elevation={1} 
@@ -254,19 +286,97 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         <CircularProgress color="inherit" />
       </Backdrop>
       
-      {/* Recording Status Chip */}
-      {status !== 'inactive' && (
-        <Chip
-          label={status === 'recording' ? 'Recording' : status === 'paused' ? 'Paused' : 'Completed'}
-          color={status === 'recording' ? 'error' : status === 'paused' ? 'warning' : 'success'}
-          size="small"
-          sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
-        />
-      )}
+      {/* Header with visualizer controls and status */}
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        mb: 2 
+      }}>
+        <Box>
+          {status !== 'inactive' && (
+            <Chip
+              label={status === 'recording' ? 'Recording' : status === 'paused' ? 'Paused' : 'Completed'}
+              color={status === 'recording' ? 'error' : status === 'paused' ? 'warning' : 'success'}
+              size="small"
+              sx={{ 
+                borderRadius: '4px',
+                '& .MuiChip-label': {
+                  px: 1,
+                }
+              }}
+            />
+          )}
+        </Box>
+        
+        {/* Right-side controls */}
+        <Box>
+          {/* Visualizer style toggle */}
+          <ToggleButtonGroup
+            value={visualizerStyle}
+            exclusive
+            onChange={handleVisualizerStyleChange}
+            aria-label="visualizer style"
+            size="small"
+            sx={{ 
+              mr: 1,
+              '& .MuiToggleButtonGroup-grouped': {
+                padding: '4px 8px',
+                borderRadius: '4px !important'
+              }
+            }}
+          >
+            <ToggleButton value="bars" aria-label="bars">
+              <Tooltip title="Bar visualization">
+                <ViewWeekIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="wave" aria-label="wave">
+              <Tooltip title="Wave visualization">
+                <ShowChartIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="dots" aria-label="dots">
+              <Tooltip title="Dot visualization">
+                <CircleIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+          
+          {/* Menu for more options */}
+          <IconButton 
+            size="small" 
+            onClick={handleMenuOpen}
+            sx={{ visibility: showAudioControls ? 'visible' : 'hidden' }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+          <Menu
+            anchorEl={menuAnchorEl}
+            open={Boolean(menuAnchorEl)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem onClick={() => {
+              setShowDetails(!showDetails);
+              handleMenuClose();
+            }}>
+              {showDetails ? 'Hide Details' : 'Show Details'}
+            </MenuItem>
+            {status === 'completed' && (
+              <MenuItem onClick={() => {
+                handleClearRecording();
+                handleMenuClose();
+              }}>
+                Clear Recording
+              </MenuItem>
+            )}
+          </Menu>
+        </Box>
+      </Box>
       
       {/* Recording Duration & Progress */}
       {(status === 'recording' || status === 'paused') && (
-        <Box sx={{ mb: 2, mt: 1 }}>
+        <Box sx={{ mb: 2 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.5 }}>
             <Typography variant="body2" color="text.secondary">
               {formatDuration(duration)}
@@ -279,6 +389,11 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             variant="determinate" 
             value={(duration / maxDuration) * 100} 
             color={status === 'paused' ? 'warning' : 'primary'}
+            sx={{ 
+              height: 4,
+              borderRadius: 2,
+              bgcolor: 'rgba(0,0,0,0.05)'
+            }}
           />
         </Box>
       )}
@@ -287,7 +402,14 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       {showQualityFeedback && qualityInfo && status === 'recording' && !qualityInfo.isGood && (
         <Alert 
           severity={qualityInfo.issues.includes('clipping') || qualityInfo.issues.includes('interrupted') ? 'error' : 'warning'}
-          sx={{ mb: 2, mt: status === 'recording' ? 0 : 2 }}
+          sx={{ 
+            mb: 2, 
+            mt: status === 'recording' ? 0 : 2,
+            borderRadius: 2,
+            '& .MuiAlert-icon': {
+              alignItems: 'center'
+            }
+          }}
           icon={<WarningIcon />}
         >
           {qualityInfo.issues.includes('low-volume') && (
@@ -321,12 +443,11 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         sx={{ 
           height: 100, 
           mb: 2, 
-          borderRadius: 1,
+          borderRadius: 2,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          border: '1px solid #e0e4e8',
           overflow: 'hidden',
           bgcolor: '#ffffff'
         }}
@@ -400,10 +521,14 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
           </Typography>
         )}
         
-        <AudioVisualizer recordingState={recordingState} />
+        <AudioVisualizer 
+          recordingState={recordingState} 
+          visualizerStyle={visualizerStyle}
+          height={80}
+        />
         
         {status === 'completed' && audioUrl && (
-          <Box sx={{ width: '100%', height: '100%', p: 1 }}>
+          <Box sx={{ width: '100%', height: '100%', p: 1, position: 'relative', zIndex: 1 }}>
             <audio 
               ref={audioRef}
               src={audioUrl} 
@@ -417,7 +542,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
                   color="primary" 
                   onClick={togglePlayback} 
                   size="small"
-                  sx={{ mr: 1 }}
+                  sx={{ 
+                    mr: 1,
+                    bgcolor: 'primaryLighter.main',
+                    '&:hover': {
+                      bgcolor: 'primary.light',
+                    }
+                  }}
                 >
                   {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
                 </IconButton>
@@ -428,6 +559,26 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
                     onChange={handleSeek}
                     aria-labelledby="audio-progress-slider"
                     size="small"
+                    sx={{
+                      color: 'primary.main',
+                      '& .MuiSlider-thumb': {
+                        width: 12,
+                        height: 12,
+                        '&:before': {
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                        },
+                        '&:hover, &.Mui-focusVisible, &.Mui-active': {
+                          boxShadow: '0 0 0 8px rgba(74, 85, 162, 0.16)',
+                        }
+                      },
+                      '& .MuiSlider-track': {
+                        height: 4,
+                      },
+                      '& .MuiSlider-rail': {
+                        height: 4,
+                        opacity: 0.2,
+                      },
+                    }}
                   />
                 </Box>
               </Box>
@@ -465,7 +616,12 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             color="primary"
             startIcon={<MicIcon />}
             onClick={handleStartRecording}
-            sx={{ borderRadius: 28 }}
+            sx={{ 
+              borderRadius: 28,
+              px: 3,
+              py: 1,
+              boxShadow: (theme) => `0 4px 14px 0 ${theme.palette.primary.light}40`
+            }}
           >
             Record
           </Button>
@@ -488,7 +644,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               color="error"
               startIcon={<StopIcon />}
               onClick={stopRecording}
-              sx={{ borderRadius: 28 }}
+              sx={{ 
+                borderRadius: 28,
+                boxShadow: (theme) => `0 4px 14px 0 ${theme.palette.error.light}40`
+              }}
             >
               Stop
             </Button>
@@ -512,7 +671,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               color="error"
               startIcon={<StopIcon />}
               onClick={stopRecording}
-              sx={{ borderRadius: 28 }}
+              sx={{ 
+                borderRadius: 28,
+                boxShadow: (theme) => `0 4px 14px 0 ${theme.palette.error.light}40`
+              }}
             >
               Stop
             </Button>
@@ -530,22 +692,6 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             >
               Record New
             </Button>
-            
-            <IconButton
-              color="error"
-              onClick={handleClearRecording}
-              size="small"
-            >
-              <DeleteIcon />
-            </IconButton>
-            
-            <IconButton
-              color="info"
-              onClick={() => setShowDetails(!showDetails)}
-              size="small"
-            >
-              <InfoOutlinedIcon />
-            </IconButton>
           </>
         )}
         
@@ -559,7 +705,8 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       
       {/* Recording Details */}
       <Collapse in={showDetails}>
-        <Box sx={{ mt: 2, p: 1, bgcolor: '#f0f5ff', borderRadius: 1 }}>
+        <Box sx={{ mt: 2, p: 2, bgcolor: '#f0f5ff', borderRadius: 2 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1, color: 'primary.main' }}>Recording Details</Typography>
           <Typography variant="caption" display="block">
             Format: {recordingFormat || 'Unknown'}
           </Typography>
@@ -579,7 +726,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       
       {/* Error message */}
       {error && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert 
+          severity="error" 
+          sx={{ 
+            mt: 2,
+            borderRadius: 2
+          }}
+        >
           {error.message}
         </Alert>
       )}

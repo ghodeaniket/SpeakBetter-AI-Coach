@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -15,12 +16,19 @@ import {
   Chip,
   Stack,
   Divider,
-  Container
+  Container,
+  Breadcrumbs,
+  Link
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import HomeIcon from '@mui/icons-material/Home';
+import MicIcon from '@mui/icons-material/Mic';
+import SaveIcon from '@mui/icons-material/Save';
 import AudioRecorder from '../../../shared/components/AudioRecorder';
 import DebugLog from '../../../shared/components/DebugLog';
 import { useSpeech } from '../../../shared/contexts/SpeechContext';
+import { useAuth } from '../../../shared/contexts/AuthContext';
+import { useSessionManagement } from '../../session-management/hooks/useSessionManagement';
 import { 
   processAudio, 
   calculateAccuracy, 
@@ -30,6 +38,25 @@ import { formatSeconds } from '../../../shared/utils/formatters';
 import { TranscriptionResult } from '../../../services/google-cloud/speech';
 
 const SpeechToTextAnalyzer: React.FC = () => {
+  // Router hooks
+  const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const sessionId = queryParams.get('sessionId');
+  
+  // Auth hook
+  const { userProfile } = useAuth();
+  
+  // Session management hook
+  const { 
+    currentSession, 
+    loadSession, 
+    updateSessionData, 
+    uploadRecording, 
+    isLoading: sessionLoading,
+    error: sessionError
+  } = useSessionManagement({ userId: userProfile?.uid || null });
+  
   // Local state
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [transcribing, setTranscribing] = useState(false);
@@ -40,8 +67,20 @@ const SpeechToTextAnalyzer: React.FC = () => {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [processingTimeMs, setProcessingTimeMs] = useState<number | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const [sessionSaved, setSessionSaved] = useState(false);
+  const [durationSeconds, setDurationSeconds] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Load session data if sessionId is provided
+  useEffect(() => {
+    if (sessionId && userProfile?.uid) {
+      loadSession(sessionId).catch(err => {
+        console.error('Error loading session:', err);
+        setError('Error loading session: ' + err.message);
+      });
+    }
+  }, [sessionId, userProfile?.uid, loadSession]);
 
   // Add debug message
   const addDebugMessage = (message: string) => {
@@ -52,11 +91,13 @@ const SpeechToTextAnalyzer: React.FC = () => {
   };
 
   // Handle audio captured
-  const handleAudioCaptured = (blob: Blob) => {
+  const handleAudioCaptured = (blob: Blob, duration: number) => {
     setAudioBlob(blob);
+    setDurationSeconds(duration);
     const url = URL.createObjectURL(blob);
     setAudioUrl(url);
-    addDebugMessage(`Audio recorded: ${(blob.size / 1024).toFixed(2)} KB`);
+    setSessionSaved(false);
+    addDebugMessage(`Audio recorded: ${(blob.size / 1024).toFixed(2)} KB, Duration: ${duration.toFixed(1)}s`);
   };
 
   // Transcribe the audio
@@ -73,6 +114,11 @@ const SpeechToTextAnalyzer: React.FC = () => {
 
     try {
       addDebugMessage('Starting transcription process...');
+
+      // If we have a session, update its status to processing
+      if (sessionId) {
+        await updateSessionData(sessionId, { status: 'processing' });
+      }
 
       const result = await processAudio(audioBlob, {
         uploadToStorage: true,
@@ -102,12 +148,59 @@ const SpeechToTextAnalyzer: React.FC = () => {
       if (result.audioUrl) {
         setAudioUrl(result.audioUrl);
       }
+      
+      // If we have a session, update it with the analysis results
+      if (sessionId) {
+        await updateSessionData(sessionId, { 
+          status: 'completed',
+          hasAnalysis: true,
+          title: result.transcriptionResult.transcript.slice(0, 30) + (result.transcriptionResult.transcript.length > 30 ? '...' : '')
+        });
+      }
     } catch (err: any) {
       console.error('Transcription error:', err);
       setError(`Error transcribing audio: ${err.message || 'Unknown error'}`);
       addDebugMessage(`ERROR: ${err.message || 'Unknown error'}`);
+      
+      // If we have a session, update its status to error
+      if (sessionId) {
+        await updateSessionData(sessionId, { status: 'error' });
+      }
     } finally {
       setTranscribing(false);
+    }
+  };
+  
+  // Save the recording to the session
+  const handleSaveToSession = async () => {
+    if (!audioBlob || !sessionId || !userProfile?.uid) {
+      setError('Cannot save: Missing audio recording, session, or user authentication');
+      return;
+    }
+    
+    try {
+      setError(null);
+      addDebugMessage('Saving recording to session...');
+      
+      // Upload the recording to the session
+      await uploadRecording(sessionId, audioBlob, durationSeconds);
+      
+      setSessionSaved(true);
+      addDebugMessage('Recording saved to session successfully');
+    } catch (err: any) {
+      console.error('Error saving to session:', err);
+      setError(`Error saving to session: ${err.message || 'Unknown error'}`);
+      addDebugMessage(`ERROR saving to session: ${err.message || 'Unknown error'}`);
+    }
+  };
+  
+  // Return to dashboard
+  const handleReturnToDashboard = () => {
+    // If we have analysis results, set state to show success message
+    if (transcriptionResults) {
+      navigate('/', { state: { fromSession: true } });
+    } else {
+      navigate('/');
     }
   };
 
@@ -129,14 +222,52 @@ const SpeechToTextAnalyzer: React.FC = () => {
   return (
     <Container maxWidth="md">
       <Box sx={{ py: 4 }}>
+        {/* Breadcrumb navigation */}
+        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+          <Link
+            underline="hover"
+            color="inherit"
+            sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            onClick={handleReturnToDashboard}
+          >
+            <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+            Dashboard
+          </Link>
+          <Typography color="text.primary" sx={{ display: 'flex', alignItems: 'center' }}>
+            <MicIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+            Speech Analysis
+          </Typography>
+        </Breadcrumbs>
+      
         <Typography variant="h4" gutterBottom>
           Speech Analysis
+          {currentSession && (
+            <Chip 
+              label={currentSession.type === 'freestyle' ? 'Freestyle Practice' : 
+                    currentSession.type === 'guided' ? 'Guided Reading' : 'Q&A Simulation'} 
+              color="primary" 
+              size="small" 
+              sx={{ ml: 2, verticalAlign: 'middle' }} 
+            />
+          )}
         </Typography>
         
         <Typography variant="body1" paragraph>
           Record your speech and get detailed analysis including transcription, filler word detection, 
           and speaking rate.
         </Typography>
+        
+        {sessionLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+            <CircularProgress />
+          </Box>
+        )}
+        
+        {sessionError && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {sessionError}
+          </Alert>
+        )}
         
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" gutterBottom>1. Record Audio</Typography>
@@ -151,6 +282,25 @@ const SpeechToTextAnalyzer: React.FC = () => {
                 controls 
                 style={{ width: '100%' }}
               />
+              
+              {/* Save to session button */}
+              {sessionId && audioBlob && userProfile && !sessionSaved && (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<SaveIcon />}
+                  onClick={handleSaveToSession}
+                  sx={{ mt: 2 }}
+                >
+                  Save Recording to Session
+                </Button>
+              )}
+              
+              {sessionSaved && (
+                <Alert severity="success" sx={{ mt: 2 }}>
+                  Recording saved to session successfully!
+                </Alert>
+              )}
             </Box>
           )}
         </Paper>
@@ -174,20 +324,31 @@ const SpeechToTextAnalyzer: React.FC = () => {
         
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" gutterBottom>3. Analyze Speech</Typography>
-          <Button 
-            variant="contained" 
-            color="primary"
-            disabled={!audioBlob || transcribing}
-            onClick={handleTranscribe}
-            sx={{ mb: 2 }}
-          >
-            {transcribing ? (
-              <>
-                <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
-                Analyzing...
-              </>
-            ) : 'Analyze Speech'}
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <Button 
+              variant="contained" 
+              color="primary"
+              disabled={!audioBlob || transcribing}
+              onClick={handleTranscribe}
+              sx={{ mb: 2 }}
+            >
+              {transcribing ? (
+                <>
+                  <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                  Analyzing...
+                </>
+              ) : 'Analyze Speech'}
+            </Button>
+            
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={handleReturnToDashboard}
+              sx={{ mb: 2 }}
+            >
+              Return to Dashboard
+            </Button>
+          </Stack>
           
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
