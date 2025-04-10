@@ -40,7 +40,8 @@ import { OnboardingTips } from '../auth/components';
 import { 
   ProgressTrackingWidget,
   RecentSessionsWidget,
-  QuickActionCard
+  QuickActionCard,
+  UserGoalsWidget
 } from './components';
 
 interface TabPanelProps {
@@ -189,20 +190,22 @@ const DashboardPage: React.FC = () => {
                               </Box>
                             </Box>
                             
-                            <Button 
-                              variant="contained" 
-                              sx={{ 
-                                mt: 2,
-                                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                                '&:hover': {
-                                  backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                                }
-                              }}
-                              startIcon={<MicIcon />}
-                              onClick={() => handleSessionCreate('freestyle')}
-                            >
-                              Start Practice
-                            </Button>
+                            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                              <Button 
+                                variant="contained" 
+                                sx={{ 
+                                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                  },
+                                  flex: 1
+                                }}
+                                startIcon={<MicIcon />}
+                                onClick={() => navigate('/practice')}
+                              >
+                                Practice Modes
+                              </Button>
+                            </Stack>
                           </CardContent>
                         </Card>
                       </Grid>
@@ -262,6 +265,7 @@ const DashboardPage: React.FC = () => {
                   
                   {/* Right column */}
                   <Grid item xs={12} lg={4}>
+                    <UserGoalsWidget />
                     <ProgressTrackingWidget sessions={sessions} />
                     {/* Other widgets */}
                   </Grid>

@@ -259,7 +259,7 @@ const RecentSessionsWidget: React.FC<RecentSessionsWidgetProps> = ({
               </React.Fragment>
             ))}
             {/* Button to view all sessions */}
-            <ListItem sx={{ justifyContent: 'center', mt: 1 }}>
+            <ListItem sx={{ justifyContent: 'space-between', mt: 1 }}>
               <Button
                 variant="outlined"
                 color="primary"
@@ -267,7 +267,16 @@ const RecentSessionsWidget: React.FC<RecentSessionsWidgetProps> = ({
                 onClick={handleNewSession}
                 startIcon={<MicIcon />}
               >
-                New Session
+                Quick Session
+              </Button>
+              
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={() => navigate('/practice')}
+              >
+                Practice Modes
               </Button>
             </ListItem>
           </List>

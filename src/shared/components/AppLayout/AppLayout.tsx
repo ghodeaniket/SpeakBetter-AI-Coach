@@ -38,9 +38,12 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import HistoryIcon from '@mui/icons-material/History';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import PersonIcon from '@mui/icons-material/Person';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import { UserProfile } from '../../../features/auth/components';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSessionManagement } from '../../../features/session-management/hooks/useSessionManagement';
+import { useProgressData } from '../../../features/progress-tracking/hooks/useProgressData';
 import { LoadingScreen } from '../common';
 
 // Dialog transition effect
@@ -75,6 +78,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const sessionManagement = useSessionManagement({ 
     userId: userProfile?.uid || null 
   });
+  
+  // Progress tracking
+  const { newAchievements, loading: progressLoading } = useProgressData();
   
   const sessions = sessionManagement?.sessions || [];
   const sessionsLoading = sessionManagement?.isLoading || false;
@@ -164,10 +170,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       path: '/feedback',
     },
     {
+      text: 'Progress Tracking',
+      icon: <BarChartIcon />,
+      path: '/progress',
+      badge: (!progressLoading && newAchievements) ? newAchievements.length : 0
+    },
+    {
       text: 'Session History',
       icon: <HistoryIcon />,
       path: '/history',
       badge: completedSessions
+    },
+    {
+      text: 'My Profile',
+      icon: <PersonIcon />,
+      path: '/profile',
     }
   ];
 
@@ -322,6 +339,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                         to="/history"
                       >
                         <NotificationsIcon />
+                      </IconButton>
+                    </Badge>
+                  </Tooltip>
+                )}
+                
+                {!progressLoading && newAchievements && newAchievements.length > 0 && (
+                  <Tooltip title={`${newAchievements.length} new achievement${newAchievements.length !== 1 ? 's' : ''}!`}>
+                    <Badge badgeContent={newAchievements.length} color="success" sx={{ mr: 1 }}>
+                      <IconButton 
+                        color="inherit" 
+                        aria-label="view achievements"
+                        component={Link}
+                        to="/progress"
+                      >
+                        <BarChartIcon />
                       </IconButton>
                     </Badge>
                   </Tooltip>
@@ -499,6 +531,28 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   <ListItemText 
                     primary={<Typography variant="subtitle1">Generate Feedback</Typography>}
                     secondary="Use the AI Coach to create customized feedback based on your performance"
+                  />
+                </ListItem>
+                
+                <Divider component="li" variant="inset" />
+                
+                <ListItem sx={{ px: 0 }}>
+                  <ListItemIcon>
+                    <Box sx={{ 
+                      backgroundColor: 'primaryLighter.main',
+                      borderRadius: '50%',
+                      width: 32,
+                      height: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <BarChartIcon color="primary" fontSize="small" />
+                    </Box>
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={<Typography variant="subtitle1">Track Your Progress</Typography>}
+                    secondary="Visit the Progress Tracking page to see your improvement over time"
                   />
                 </ListItem>
               </List>

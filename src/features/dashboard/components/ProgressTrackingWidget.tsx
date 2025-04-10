@@ -7,52 +7,32 @@ import {
   Divider,
   LinearProgress,
   Paper,
-  Stack
+  Stack,
+  Button,
+  Skeleton
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-import { Session } from '../../session-management/services/sessionService';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import { useNavigate } from 'react-router-dom';
+import { useProgressData } from '../../progress-tracking/hooks/useProgressData';
 
 interface ProgressTrackingWidgetProps {
-  sessions: Session[];
+  showViewAll?: boolean;
 }
 
-const ProgressTrackingWidget: React.FC<ProgressTrackingWidgetProps> = ({ sessions }) => {
-  // Only include completed sessions with analysis
-  const completedSessions = sessions.filter(
-    (session) => session.status === 'completed' && session.hasAnalysis
-  );
-
-  // Returns true if we have enough data to show progress
-  const hasEnoughData = completedSessions.length >= 2;
-
-  // Calculate averages based on mock data for now
-  // In a real app, we would pull this from the analysis stored in Firestore
-  const calculateAverages = () => {
-    // Mock data for demonstration - in production this would come from actual session analysis
-    return {
-      wordsPerMinute: {
-        current: 145,
-        previous: 135,
-        change: 7.4
-      },
-      fillerWordsPercentage: {
-        current: 5.2,
-        previous: 7.8,
-        change: -33.3
-      },
-      clarityScore: {
-        current: 82,
-        previous: 75,
-        change: 9.3
-      }
-    };
-  };
-
-  const metrics = calculateAverages();
+const ProgressTrackingWidget: React.FC<ProgressTrackingWidgetProps> = ({ 
+  showViewAll = true
+}) => {
+  const navigate = useNavigate();
+  const { loading, error, metrics, newAchievements } = useProgressData();
 
   // Helper to render trend arrows and colors
   const renderTrend = (change: number, isGoodWhenPositive: boolean = true) => {
+    if (Math.abs(change) < 2) {
+      return null; // No significant change
+    }
+    
     const isPositive = change > 0;
     const isGood = isPositive === isGoodWhenPositive;
     
@@ -75,23 +55,45 @@ const ProgressTrackingWidget: React.FC<ProgressTrackingWidgetProps> = ({ session
   };
 
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ height: '100%', mb: 3 }}>
       <CardContent>
-        <Typography variant="h6" gutterBottom display="flex" alignItems="center">
-          <TrendingUpIcon sx={{ mr: 1 }} />
-          Speaking Progress
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="h6" display="flex" alignItems="center">
+            <BarChartIcon sx={{ mr: 1 }} />
+            Speaking Progress
+          </Typography>
+          
+          {showViewAll && (
+            <Button 
+              size="small" 
+              color="primary"
+              onClick={() => navigate('/progress')}
+            >
+              View All
+            </Button>
+          )}
+        </Box>
 
-        {!hasEnoughData ? (
+        {loading ? (
+          <Box sx={{ mt: 2 }}>
+            <Skeleton variant="rectangular" height={80} sx={{ mb: 2, borderRadius: 1 }} />
+            <Skeleton variant="rectangular" height={80} sx={{ mb: 2, borderRadius: 1 }} />
+            <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 1 }} />
+          </Box>
+        ) : error ? (
+          <Box sx={{ textAlign: 'center', py: 3 }}>
+            <Typography variant="body2" color="error">
+              Error loading progress data
+            </Typography>
+          </Box>
+        ) : !metrics ? (
           <Box sx={{ textAlign: 'center', py: 3 }}>
             <Typography variant="body2" color="text.secondary">
-              Complete at least 2 sessions to see your progress trends
+              Complete at least 1 session to see your progress trends
             </Typography>
-            <LinearProgress sx={{ mt: 2, mb: 1 }} variant="determinate" value={
-              (completedSessions.length / 2) * 100
-            } />
+            <LinearProgress sx={{ mt: 2, mb: 1 }} variant="determinate" value={0} />
             <Typography variant="caption" color="text.secondary">
-              {completedSessions.length}/2 sessions completed
+              0/1 sessions completed
             </Typography>
           </Box>
         ) : (
@@ -106,7 +108,7 @@ const ProgressTrackingWidget: React.FC<ProgressTrackingWidgetProps> = ({ session
                     {metrics.wordsPerMinute.current} WPM
                   </Typography>
                 </Box>
-                {renderTrend(metrics.wordsPerMinute.change)}
+                {renderTrend(metrics.wordsPerMinute.trend)}
               </Stack>
               <LinearProgress 
                 variant="determinate" 
@@ -123,14 +125,14 @@ const ProgressTrackingWidget: React.FC<ProgressTrackingWidgetProps> = ({ session
                     Filler Words
                   </Typography>
                   <Typography variant="h6">
-                    {metrics.fillerWordsPercentage.current}%
+                    {metrics.fillerWordPercentage.current}%
                   </Typography>
                 </Box>
-                {renderTrend(metrics.fillerWordsPercentage.change, false)}
+                {renderTrend(metrics.fillerWordPercentage.trend, false)}
               </Stack>
               <LinearProgress 
                 variant="determinate" 
-                value={Math.min(100 - (metrics.fillerWordsPercentage.current / 15) * 100, 100)}
+                value={Math.min(100 - (metrics.fillerWordPercentage.current / 15) * 100, 100)}
                 sx={{ mt: 1 }}
                 color="secondary"
               />
@@ -146,7 +148,7 @@ const ProgressTrackingWidget: React.FC<ProgressTrackingWidgetProps> = ({ session
                     {metrics.clarityScore.current}/100
                   </Typography>
                 </Box>
-                {renderTrend(metrics.clarityScore.change)}
+                {renderTrend(metrics.clarityScore.trend)}
               </Stack>
               <LinearProgress 
                 variant="determinate" 
@@ -155,6 +157,18 @@ const ProgressTrackingWidget: React.FC<ProgressTrackingWidgetProps> = ({ session
                 color="success"
               />
             </Paper>
+            
+            {newAchievements && newAchievements.length > 0 && (
+              <Box sx={{ mt: 2, textAlign: 'center' }}>
+                <Button 
+                  variant="outlined" 
+                  color="primary"
+                  onClick={() => navigate('/progress')}
+                >
+                  {newAchievements.length} New Achievement{newAchievements.length > 1 ? 's' : ''}!
+                </Button>
+              </Box>
+            )}
           </Box>
         )}
       </CardContent>

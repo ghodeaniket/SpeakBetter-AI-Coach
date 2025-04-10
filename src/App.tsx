@@ -3,6 +3,7 @@ import { Alert, Box, Button, Container, Paper, Typography, Snackbar, ThemeProvid
 import Routes from './shared/routes/Routes';
 import { AuthProvider } from './shared/contexts/AuthContext';
 import { SpeechProvider } from './shared/contexts/SpeechContext';
+import { UserProfileProvider } from './shared/contexts/UserProfileContext';
 import globalStyles from './shared/theme/globalStyles';
 import theme from './shared/theme';
 
@@ -82,9 +83,11 @@ function App() {
       <MuiGlobalStyles styles={globalStyles(theme)} />
       <ErrorBoundary>
         <AuthProvider>
-          <SpeechProvider>
-            <AppContent />
-          </SpeechProvider>
+          <UserProfileProvider>
+            <SpeechProvider>
+              <AppContent />
+            </SpeechProvider>
+          </UserProfileProvider>
         </AuthProvider>
       </ErrorBoundary>
     </ThemeProvider>

@@ -18,12 +18,16 @@ import {
   Divider,
   Container,
   Breadcrumbs,
-  Link
+  Link,
+  Tabs,
+  Tab
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import HomeIcon from '@mui/icons-material/Home';
 import MicIcon from '@mui/icons-material/Mic';
 import SaveIcon from '@mui/icons-material/Save';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
 import AudioRecorder from '../../../shared/components/AudioRecorder';
 import DebugLog from '../../../shared/components/DebugLog';
 import { useSpeech } from '../../../shared/contexts/SpeechContext';
@@ -36,6 +40,10 @@ import {
 } from '../services/speechToTextService';
 import { formatSeconds } from '../../../shared/utils/formatters';
 import { TranscriptionResult } from '../../../services/google-cloud/speech';
+import { 
+  getGuidedReadingContentById,
+  getQAQuestionById 
+} from '../../practice-modes/services/practiceContentService';
 
 const SpeechToTextAnalyzer: React.FC = () => {
   // Router hooks
@@ -43,6 +51,8 @@ const SpeechToTextAnalyzer: React.FC = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const sessionId = queryParams.get('sessionId');
+  const practiceType = queryParams.get('type') as 'freestyle' | 'guided' | 'qa' || 'freestyle';
+  const contentId = queryParams.get('contentId');
   
   // Auth hook
   const { userProfile } = useAuth();
@@ -72,8 +82,44 @@ const SpeechToTextAnalyzer: React.FC = () => {
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [sessionSaved, setSessionSaved] = useState(false);
   const [durationSeconds, setDurationSeconds] = useState(0);
+  const [practiceContent, setPracticeContent] = useState<any | null>(null);
+  const [contentLoading, setContentLoading] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Load content if contentId is provided
+  useEffect(() => {
+    if (contentId && (practiceType === 'guided' || practiceType === 'qa')) {
+      setContentLoading(true);
+      
+      const loadContent = async () => {
+        try {
+          let content = null;
+          
+          if (practiceType === 'guided') {
+            content = await getGuidedReadingContentById(contentId);
+            if (content) {
+              // Set reference text for guided reading
+              setReferenceText(content.text);
+            }
+          } else if (practiceType === 'qa') {
+            content = await getQAQuestionById(contentId);
+          }
+          
+          setPracticeContent(content);
+          addDebugMessage(`${practiceType} content loaded: ${content?.title || content?.question}`);
+        } catch (err: any) {
+          console.error('Error loading content:', err);
+          setError(`Error loading content: ${err.message || 'Unknown error'}`);
+          addDebugMessage(`ERROR loading content: ${err.message || 'Unknown error'}`);
+        } finally {
+          setContentLoading(false);
+        }
+      };
+      
+      loadContent();
+    }
+  }, [contentId, practiceType]);
   
   // Load session data if sessionId is provided
   useEffect(() => {
@@ -158,11 +204,39 @@ const SpeechToTextAnalyzer: React.FC = () => {
       
       // If we have a session, update it with the analysis results
       if (sessionId) {
-        await updateSessionData(sessionId, { 
+        const updateData: any = { 
           status: 'completed',
           hasAnalysis: true,
-          title: result.transcriptionResult.transcript.slice(0, 30) + (result.transcriptionResult.transcript.length > 30 ? '...' : '')
-        });
+          title: result.transcriptionResult.transcript.slice(0, 30) + (result.transcriptionResult.transcript.length > 30 ? '...' : ''),
+          metrics: {
+            wordsPerMinute: result.wordsPerMinute || 0,
+            fillerWordCount: result.transcriptionResult.fillerWords?.count || 0,
+            fillerWordPercentage: getFillerWordPercentage(result.transcriptionResult),
+            clarityScore: result.clarityScore || 0
+          }
+        };
+        
+        // Add practice-specific data
+        if (practiceType === 'guided' && referenceText) {
+          // For guided reading, add reference text and accuracy score
+          updateData.referenceText = referenceText;
+          
+          if (accuracyScore !== null) {
+            updateData.metrics.accuracyScore = accuracyScore;
+          }
+        } else if (practiceType === 'qa' && practiceContent) {
+          // For Q&A, add the question
+          updateData.question = practiceContent.question;
+          
+          // Add structure score calculation (simplified example)
+          // In a real implementation, you would have a more sophisticated
+          // algorithm to evaluate response structure
+          const wordCount = result.transcriptionResult.wordTimeOffsets?.length || 0;
+          const structureScore = wordCount > 100 ? 85 : wordCount > 50 ? 70 : 50;
+          updateData.metrics.structureScore = structureScore;
+        }
+        
+        await updateSessionData(sessionId, updateData);
       }
     } catch (err: any) {
       console.error('Transcription error:', err);
@@ -255,14 +329,98 @@ const SpeechToTextAnalyzer: React.FC = () => {
               color="primary" 
               size="small" 
               sx={{ ml: 2, verticalAlign: 'middle' }} 
+              icon={currentSession.type === 'freestyle' ? <MicIcon /> : 
+                   currentSession.type === 'guided' ? <MenuBookIcon /> : <QuestionAnswerIcon />}
             />
           )}
         </Typography>
         
-        <Typography variant="body1" paragraph>
-          Record your speech and get detailed analysis including transcription, filler word detection, 
-          and speaking rate.
-        </Typography>
+        {practiceType === 'freestyle' && (
+          <Typography variant="body1" paragraph>
+            Record your speech and get detailed analysis including transcription, filler word detection, 
+            and speaking rate.
+          </Typography>
+        )}
+        
+        {practiceType === 'guided' && practiceContent && (
+          <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: 'primary.50' }}>
+            <Typography variant="h6" gutterBottom>
+              {practiceContent.title}
+            </Typography>
+            <Typography variant="body2" paragraph>
+              Please read the following passage clearly and at a comfortable pace:
+            </Typography>
+            <Paper 
+              variant="outlined" 
+              sx={{ 
+                p: 2, 
+                mb: 2, 
+                maxHeight: '150px', 
+                overflow: 'auto',
+                bgcolor: '#ffffff',
+                lineHeight: 1.6,
+                fontSize: '0.95rem'
+              }}
+            >
+              <Typography variant="body1">
+                {practiceContent.text}
+              </Typography>
+            </Paper>
+            <Stack direction="row" spacing={1}>
+              <Chip 
+                size="small" 
+                label={`Level: ${practiceContent.level}`} 
+                color={practiceContent.level === 'beginner' ? 'success' : 
+                      practiceContent.level === 'intermediate' ? 'primary' : 'error'}
+                variant="outlined"
+              />
+              <Chip 
+                size="small" 
+                label={`Est. time: ${Math.round(practiceContent.estimatedDuration / 10) * 10}s`} 
+                variant="outlined"
+              />
+            </Stack>
+          </Paper>
+        )}
+        
+        {practiceType === 'qa' && practiceContent && (
+          <Paper elevation={1} sx={{ p: 2, mb: 3, bgcolor: 'primary.50' }}>
+            <Typography variant="h6" gutterBottom>
+              Question to Answer
+            </Typography>
+            <Paper 
+              variant="outlined" 
+              sx={{ 
+                p: 2, 
+                mb: 2, 
+                bgcolor: '#ffffff',
+                borderLeft: '4px solid',
+                borderLeftColor: 'primary.main'
+              }}
+            >
+              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                {practiceContent.question}
+              </Typography>
+            </Paper>
+            {practiceContent.context && (
+              <Typography variant="body2" paragraph>
+                <strong>Context:</strong> {practiceContent.context}
+              </Typography>
+            )}
+            {practiceContent.suggestedTopics && practiceContent.suggestedTopics.length > 0 && (
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="caption" display="block" gutterBottom>
+                  Suggested topics to address:
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {practiceContent.suggestedTopics.map((topic: string, index: number) => (
+                    <Chip key={index} size="small" label={topic} variant="outlined" />
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Paper>
+        )}
         
         {sessionLoading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
@@ -312,22 +470,25 @@ const SpeechToTextAnalyzer: React.FC = () => {
           )}
         </Paper>
         
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>2. Optional: Reference Text</Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Provide a reference text to compare against the transcription (optional)
-          </Typography>
-          
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            variant="outlined"
-            placeholder="Enter reference text for accuracy comparison..."
-            value={referenceText}
-            onChange={(e) => setReferenceText(e.target.value)}
-          />
-        </Paper>
+        {/* Reference text section - only show for freestyle practice or if no practice content is loaded */}
+        {(practiceType === 'freestyle' || (!practiceContent && practiceType !== 'qa')) && (
+          <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>2. Optional: Reference Text</Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Provide a reference text to compare against the transcription (optional)
+            </Typography>
+            
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              variant="outlined"
+              placeholder="Enter reference text for accuracy comparison..."
+              value={referenceText}
+              onChange={(e) => setReferenceText(e.target.value)}
+            />
+          </Paper>
+        )}
         
         <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" gutterBottom>3. Analyze Speech</Typography>
@@ -383,41 +544,68 @@ const SpeechToTextAnalyzer: React.FC = () => {
                   
                   <Divider sx={{ my: 2 }} />
                   
-                  <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                    <Chip 
-                      label={`Confidence: ${(transcriptionResults.confidence * 100).toFixed(1)}%`} 
-                      color={transcriptionResults.confidence > 0.8 ? "success" : "warning"}
-                    />
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Speech Metrics:
+                    </Typography>
                     
-                    {transcriptionResults.wordTimeOffsets && (
+                    <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
                       <Chip 
-                        label={`Words: ${transcriptionResults.wordTimeOffsets.length}`} 
-                        color="primary"
+                        label={`Confidence: ${(transcriptionResults.confidence * 100).toFixed(1)}%`} 
+                        color={transcriptionResults.confidence > 0.8 ? "success" : "warning"}
                       />
-                    )}
+                      
+                      {transcriptionResults.wordTimeOffsets && (
+                        <Chip 
+                          label={`Words: ${transcriptionResults.wordTimeOffsets.length}`} 
+                          color="primary"
+                        />
+                      )}
+                      
+                      {transcriptionResults.fillerWords && (
+                        <Chip 
+                          label={`Filler Words: ${transcriptionResults.fillerWords.count} (${getFormattedFillerWordPercentage()})`}
+                          color={transcriptionResults.fillerWords.count > 5 ? "error" : "warning"}
+                        />
+                      )}
+                    </Stack>
                     
-                    {transcriptionResults.fillerWords && (
-                      <Chip 
-                        label={`Filler Words: ${transcriptionResults.fillerWords.count} (${getFormattedFillerWordPercentage()})`}
-                        color={transcriptionResults.fillerWords.count > 5 ? "error" : "warning"}
-                      />
-                    )}
-                    
-                    {processingTimeMs && (
-                      <Chip 
-                        label={`Processed in ${(processingTimeMs / 1000).toFixed(1)}s`} 
-                        variant="outlined"
-                      />
-                    )}
-                  </Stack>
-                  
-                  {accuracyScore !== null && (
-                    <Chip 
-                      label={`Reference Accuracy: ${accuracyScore}%`}
-                      color={accuracyScore > 85 ? "success" : accuracyScore > 70 ? "warning" : "error"}
-                      sx={{ mr: 1 }}
-                    />
-                  )}
+                    <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                      {/* Accuracy score for reference text or guided reading */}
+                      {accuracyScore !== null && (
+                        <Chip 
+                          label={`Accuracy: ${accuracyScore}%`}
+                          color={accuracyScore > 85 ? "success" : accuracyScore > 70 ? "warning" : "error"}
+                        />
+                      )}
+                      
+                      {/* Practice specific metrics */}
+                      {practiceType === 'guided' && (
+                        <Chip 
+                          label={`Reading Performance: ${accuracyScore ? accuracyScore : 'N/A'}`}
+                          color={accuracyScore && accuracyScore > 85 ? "success" : 
+                                accuracyScore && accuracyScore > 70 ? "warning" : "error"}
+                          icon={<MenuBookIcon />}
+                        />
+                      )}
+                      
+                      {practiceType === 'qa' && currentSession?.metrics?.structureScore && (
+                        <Chip 
+                          label={`Response Structure: ${currentSession.metrics.structureScore}/100`}
+                          color={currentSession.metrics.structureScore > 85 ? "success" : 
+                                currentSession.metrics.structureScore > 70 ? "warning" : "error"}
+                          icon={<QuestionAnswerIcon />}
+                        />
+                      )}
+                      
+                      {processingTimeMs && (
+                        <Chip 
+                          label={`Processed in ${(processingTimeMs / 1000).toFixed(1)}s`} 
+                          variant="outlined"
+                        />
+                      )}
+                    </Stack>
+                  </Box>
                 </CardContent>
               </Card>
               

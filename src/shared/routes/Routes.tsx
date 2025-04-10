@@ -6,7 +6,10 @@ import { SpeechToTextAnalyzer } from '../../features/speech-to-text/components';
 import { TextToSpeechGenerator } from '../../features/text-to-speech/components';
 import { FeedbackPage } from '../../features/feedback';
 import { SessionHistoryPage } from '../../features/session-management';
+import { ProfileManager } from '../../features/user-profile';
+import { PracticePage } from '../../features/practice-modes';
 import { LoginPage } from '../../features/auth/pages';
+import { ProgressDashboard } from '../../features/progress-tracking';
 import ProtectedRoute from '../components/ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingScreen } from '../components/common';
@@ -54,11 +57,32 @@ const Routes: React.FC = () => {
             }
           />
           <Route
-            path="/speech-to-text"
+            path="/speech-analysis"
             element={
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <SpeechToTextAnalyzer />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          {/* Practice mode routes */}
+          <Route
+            path="/practice"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <PracticePage />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/practice/:type"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <PracticePage />
                 </Suspense>
               </AppLayout>
             }
@@ -89,6 +113,26 @@ const Routes: React.FC = () => {
               <AppLayout>
                 <Suspense fallback={<LoadingFallback />}>
                   <SessionHistoryPage />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ProfileManager />
+                </Suspense>
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/progress"
+            element={
+              <AppLayout>
+                <Suspense fallback={<LoadingFallback />}>
+                  <ProgressDashboard />
                 </Suspense>
               </AppLayout>
             }

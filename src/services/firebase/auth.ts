@@ -13,7 +13,7 @@ import {
   Timestamp, 
   DocumentSnapshot
 } from 'firebase/firestore';
-import { auth, db } from '../../firebase';
+import { auth, db } from '../../firebase/config';
 
 export interface UserProfile {
   uid: string;

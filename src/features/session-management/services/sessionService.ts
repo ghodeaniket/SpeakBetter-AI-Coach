@@ -26,17 +26,36 @@ export interface Session {
   hasAnalysis: boolean;
   hasFeedback: boolean;
   title?: string;
+  contentId?: string; // ID of the guided reading content or Q&A question
+  referenceText?: string; // For guided reading to compare against
+  question?: string; // For Q&A to store the question text
+  metrics?: {
+    wordsPerMinute?: number;
+    fillerWordCount?: number;
+    fillerWordPercentage?: number;
+    clarityScore?: number;
+    accuracyScore?: number; // For guided reading
+    structureScore?: number; // For Q&A
+  };
 }
 
 /**
  * Creates a new session in Firestore
  * @param userId The ID of the user who owns the session
  * @param sessionType The type of session (freestyle, guided, qa)
+ * @param contentId Optional ID of the guided reading content or Q&A question
+ * @param options Additional session options
  * @returns The ID of the created session
  */
 export const createSession = async (
   userId: string, 
-  sessionType: 'freestyle' | 'guided' | 'qa'
+  sessionType: 'freestyle' | 'guided' | 'qa',
+  contentId?: string,
+  options?: {
+    referenceText?: string;
+    question?: string;
+    title?: string;
+  }
 ): Promise<string> => {
   try {
     const sessionData: Omit<Session, 'id'> = {
@@ -47,6 +66,24 @@ export const createSession = async (
       hasAnalysis: false,
       hasFeedback: false
     };
+
+    // Add content ID if provided
+    if (contentId) {
+      sessionData.contentId = contentId;
+    }
+
+    // Add optional data if provided
+    if (options?.referenceText) {
+      sessionData.referenceText = options.referenceText;
+    }
+
+    if (options?.question) {
+      sessionData.question = options.question;
+    }
+
+    if (options?.title) {
+      sessionData.title = options.title;
+    }
 
     const docRef = await addDoc(collection(db, 'sessions'), sessionData);
     return docRef.id;
