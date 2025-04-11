@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./packages/web/Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/packages/*/node_modules
+      - /app/packages/*/dist
+    environment:
+      - NODE_ENV=development
+    command: npm run dev -- --workspace=@speakbetter/web -- --host 0.0.0.0
+
+  mobile:
+    build:
+      context: .
+      dockerfile: ./packages/mobile/Dockerfile
+    ports:
+      - "8081:8081"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/packages/*/node_modules
+      - /app/packages/*/dist
+    environment:
+      - NODE_ENV=development
+    command: npm run start -- --workspace=@speakbetter/mobile
