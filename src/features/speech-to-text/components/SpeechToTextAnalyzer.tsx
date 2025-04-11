@@ -30,13 +30,15 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
 import AudioRecorder from '../../../shared/components/AudioRecorder';
 import DebugLog from '../../../shared/components/DebugLog';
+import OfflineIndicator from '../../../shared/components/OfflineIndicator';
 import { useSpeech } from '../../../shared/contexts/SpeechContext';
 import { useAuth } from '../../../shared/contexts/AuthContext';
 import { useSessionManagement } from '../../session-management/hooks/useSessionManagement';
 import { 
   processAudio, 
   calculateAccuracy, 
-  getFillerWordPercentage 
+  getFillerWordPercentage,
+  processAudioOffline // New offline processing function
 } from '../services/speechToTextService';
 import { formatSeconds } from '../../../shared/utils/formatters';
 import { TranscriptionResult } from '../../../services/google-cloud/speech';
@@ -44,6 +46,20 @@ import {
   getGuidedReadingContentById,
   getQAQuestionById 
 } from '../../practice-modes/services/practiceContentService';
+import useOfflineDetection from '../../../shared/hooks/useOfflineDetection';
+import useIndexedDB from '../../../shared/hooks/useIndexedDB';
+import { syncDbConfig } from '../../../services/sync/syncService';
+import { getSessionDBConfig } from '../../session-management/services/sessionService';
+
+// Full IndexedDB config combining sync and session configs
+const dbConfig = {
+  name: 'speakbetter-app-db',
+  version: 1,
+  stores: {
+    ...syncDbConfig.stores,
+    ...getSessionDBConfig()
+  }
+};
 
 const SpeechToTextAnalyzer: React.FC = () => {
   // Router hooks
@@ -60,7 +76,13 @@ const SpeechToTextAnalyzer: React.FC = () => {
   // Access speech context for storing global state
   const { state, dispatch } = useSpeech();
   
-  // Session management hook
+  // Offline detection hook
+  const { isOnline, isOffline } = useOfflineDetection();
+  
+  // IndexedDB hook for offline data storage
+  const dbAccess = useIndexedDB<any>(dbConfig);
+  
+  // Session management hook with offline support
   const { 
     currentSession, 
     loadSession, 
@@ -68,7 +90,11 @@ const SpeechToTextAnalyzer: React.FC = () => {
     uploadRecording, 
     isLoading: sessionLoading,
     error: sessionError
-  } = useSessionManagement({ userId: userProfile?.uid || null });
+  } = useSessionManagement({ 
+    userId: userProfile?.uid || null,
+    dbAccess: dbAccess,
+    isOffline
+  });
   
   // Local state
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -84,8 +110,19 @@ const SpeechToTextAnalyzer: React.FC = () => {
   const [durationSeconds, setDurationSeconds] = useState(0);
   const [practiceContent, setPracticeContent] = useState<any | null>(null);
   const [contentLoading, setContentLoading] = useState(false);
+  const [networkStatus, setNetworkStatus] = useState<'online' | 'offline'>(isOnline ? 'online' : 'offline');
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Track network status changes
+  useEffect(() => {
+    setNetworkStatus(isOnline ? 'online' : 'offline');
+    if (isOffline) {
+      addDebugMessage('Network is offline. Some features may be limited.');
+    } else if (isOnline && networkStatus === 'offline') {
+      addDebugMessage('Network is back online. Full functionality restored.');
+    }
+  }, [isOnline, isOffline, networkStatus]);
   
   // Load content if contentId is provided
   useEffect(() => {
@@ -94,20 +131,71 @@ const SpeechToTextAnalyzer: React.FC = () => {
       
       const loadContent = async () => {
         try {
-          let content = null;
-          
-          if (practiceType === 'guided') {
-            content = await getGuidedReadingContentById(contentId);
-            if (content) {
-              // Set reference text for guided reading
-              setReferenceText(content.text);
+          // First, try to load from IndexedDB if offline
+          if (isOffline && !dbAccess.isLoading && dbAccess.db) {
+            addDebugMessage('Attempting to load content from offline storage...');
+            try {
+              const cachedContent = await dbAccess.getById(
+                practiceType === 'guided' ? 'guidedContent' : 'qaContent', 
+                contentId
+              );
+              
+              if (cachedContent) {
+                setPracticeContent(cachedContent);
+                if (practiceType === 'guided') {
+                  setReferenceText(cachedContent.text);
+                }
+                addDebugMessage(`Loaded ${practiceType} content from offline storage: ${cachedContent?.title || cachedContent?.question}`);
+                setContentLoading(false);
+                return;
+              } else {
+                addDebugMessage('Content not found in offline storage.');
+              }
+            } catch (dbError) {
+              console.warn('Error accessing IndexedDB:', dbError);
             }
-          } else if (practiceType === 'qa') {
-            content = await getQAQuestionById(contentId);
           }
           
-          setPracticeContent(content);
-          addDebugMessage(`${practiceType} content loaded: ${content?.title || content?.question}`);
+          // If online or not in IndexedDB, try from server
+          if (!isOffline || !dbAccess.db) {
+            let content = null;
+            
+            if (practiceType === 'guided') {
+              content = await getGuidedReadingContentById(contentId);
+              if (content) {
+                // Set reference text for guided reading
+                setReferenceText(content.text);
+                
+                // Store in IndexedDB for offline use if we have access
+                if (dbAccess.db) {
+                  try {
+                    await dbAccess.update('guidedContent', content);
+                    addDebugMessage('Stored guided content in offline storage.');
+                  } catch (dbError) {
+                    console.warn('Could not store guided content in IndexedDB:', dbError);
+                  }
+                }
+              }
+            } else if (practiceType === 'qa') {
+              content = await getQAQuestionById(contentId);
+              
+              // Store in IndexedDB for offline use if we have access
+              if (content && dbAccess.db) {
+                try {
+                  await dbAccess.update('qaContent', content);
+                  addDebugMessage('Stored Q&A content in offline storage.');
+                } catch (dbError) {
+                  console.warn('Could not store Q&A content in IndexedDB:', dbError);
+                }
+              }
+            }
+            
+            setPracticeContent(content);
+            addDebugMessage(`${practiceType} content loaded: ${content?.title || content?.question}`);
+          } else {
+            setError('You are offline and this content is not available offline.');
+            addDebugMessage('ERROR: Cannot load content while offline');
+          }
         } catch (err: any) {
           console.error('Error loading content:', err);
           setError(`Error loading content: ${err.message || 'Unknown error'}`);
@@ -119,7 +207,7 @@ const SpeechToTextAnalyzer: React.FC = () => {
       
       loadContent();
     }
-  }, [contentId, practiceType]);
+  }, [contentId, practiceType, isOffline, dbAccess]);
   
   // Load session data if sessionId is provided
   useEffect(() => {
@@ -166,15 +254,28 @@ const SpeechToTextAnalyzer: React.FC = () => {
 
       // If we have a session, update its status to processing
       if (sessionId) {
-        await updateSessionData(sessionId, { status: 'processing' });
+        await updateSessionData(sessionId, { status: 'processing' }, {
+          dbAccess,
+          isOffline,
+          userId: userProfile?.uid || undefined
+        });
       }
 
-      const result = await processAudio(audioBlob, {
-        uploadToStorage: true,
-        languageCode: 'en-US'
-      });
+      let result;
+      
+      // Use offline processing when offline
+      if (isOffline) {
+        addDebugMessage('Using offline speech processing...');
+        result = await processAudioOffline(audioBlob);
+      } else {
+        // Online processing
+        result = await processAudio(audioBlob, {
+          uploadToStorage: true,
+          languageCode: 'en-US'
+        });
+      }
 
-      addDebugMessage(`Transcription successful: "${result.transcriptionResult.transcript}"`);
+      addDebugMessage(`Transcription ${isOffline ? '(offline)' : ''} successful: "${result.transcriptionResult.transcript}"`);
       
       if (result.wordsPerMinute) {
         addDebugMessage(`Speaking rate: ${result.wordsPerMinute} words per minute`);
@@ -236,7 +337,32 @@ const SpeechToTextAnalyzer: React.FC = () => {
           updateData.metrics.structureScore = structureScore;
         }
         
-        await updateSessionData(sessionId, updateData);
+        await updateSessionData(sessionId, updateData, {
+          dbAccess,
+          isOffline,
+          userId: userProfile?.uid || undefined
+        });
+        
+        // Store analysis in IndexedDB for offline access
+        if (dbAccess.db) {
+          try {
+            const analysisData = {
+              id: sessionId,
+              userId: userProfile?.uid,
+              transcriptionResult: result.transcriptionResult,
+              wordsPerMinute: result.wordsPerMinute,
+              clarityScore: result.clarityScore,
+              accuracyScore: accuracyScore,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            
+            await dbAccess.update('speechAnalysis', analysisData);
+            addDebugMessage('Stored analysis results in offline storage.');
+          } catch (dbError) {
+            console.warn('Could not store analysis in IndexedDB:', dbError);
+          }
+        }
       }
     } catch (err: any) {
       console.error('Transcription error:', err);
@@ -245,7 +371,11 @@ const SpeechToTextAnalyzer: React.FC = () => {
       
       // If we have a session, update its status to error
       if (sessionId) {
-        await updateSessionData(sessionId, { status: 'error' });
+        await updateSessionData(sessionId, { status: 'error' }, {
+          dbAccess,
+          isOffline,
+          userId: userProfile?.uid || undefined
+        });
       }
     } finally {
       setTranscribing(false);
@@ -261,13 +391,20 @@ const SpeechToTextAnalyzer: React.FC = () => {
     
     try {
       setError(null);
-      addDebugMessage('Saving recording to session...');
+      addDebugMessage(`Saving recording to session${isOffline ? ' (offline mode)' : ''}...`);
       
-      // Upload the recording to the session
-      await uploadRecording(sessionId, audioBlob, durationSeconds);
+      // Upload the recording to the session with offline support
+      await uploadRecording(sessionId, audioBlob, durationSeconds, {
+        dbAccess,
+        isOffline
+      });
       
       setSessionSaved(true);
       addDebugMessage('Recording saved to session successfully');
+      
+      if (isOffline) {
+        addDebugMessage('Note: Recording will be synced to server when you are back online');
+      }
     } catch (err: any) {
       console.error('Error saving to session:', err);
       setError(`Error saving to session: ${err.message || 'Unknown error'}`);
@@ -303,6 +440,16 @@ const SpeechToTextAnalyzer: React.FC = () => {
   return (
     <Container maxWidth="md">
       <Box sx={{ py: 4 }}>
+        {/* Offline Indicator */}
+        <OfflineIndicator 
+          showPersistentIndicator={true} 
+          onStatusChange={(isOnline) => {
+            if (isOnline && networkStatus === 'offline') {
+              addDebugMessage('Network is back online. Full functionality restored.');
+            }
+          }}
+        />
+        
         {/* Breadcrumb navigation */}
         <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
           <Link
@@ -334,6 +481,20 @@ const SpeechToTextAnalyzer: React.FC = () => {
             />
           )}
         </Typography>
+        
+        {/* Offline mode notice */}
+        {isOffline && (
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <AlertTitle>Offline Mode</AlertTitle>
+            You're currently working offline. Your recordings and analysis will be saved locally 
+            and synchronized when you're back online.
+            {isOffline && practiceType !== 'freestyle' && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Note: Some practice content may not be available offline.
+              </Typography>
+            )}
+          </Alert>
+        )}
         
         {practiceType === 'freestyle' && (
           <Typography variant="body1" paragraph>
@@ -464,6 +625,11 @@ const SpeechToTextAnalyzer: React.FC = () => {
               {sessionSaved && (
                 <Alert severity="success" sx={{ mt: 2 }}>
                   Recording saved to session successfully!
+                  {isOffline && (
+                    <Typography variant="body2" sx={{ mt: 1 }}>
+                      Note: The recording will be synchronized to the server when you're back online.
+                    </Typography>
+                  )}
                 </Alert>
               )}
             </Box>
@@ -505,7 +671,7 @@ const SpeechToTextAnalyzer: React.FC = () => {
                   <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
                   Analyzing...
                 </>
-              ) : 'Analyze Speech'}
+              ) : isOffline ? 'Analyze Speech (Offline)' : 'Analyze Speech'}
             </Button>
             
             <Button
@@ -524,11 +690,28 @@ const SpeechToTextAnalyzer: React.FC = () => {
             </Alert>
           )}
           
+          {isOffline && !transcriptionResults && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              In offline mode, speech analysis will use basic processing. 
+              For full analysis capabilities, please connect to the internet.
+            </Alert>
+          )}
+          
           {transcriptionResults && (
             <Box sx={{ mt: 3 }}>
               <Card variant="outlined" sx={{ mb: 2 }}>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>Transcription Result</Typography>
+                  <Typography variant="h6" gutterBottom>
+                    Transcription Result
+                    {isOffline && (
+                      <Chip 
+                        label="Offline Analysis" 
+                        size="small" 
+                        color="warning" 
+                        sx={{ ml: 2, verticalAlign: 'middle' }} 
+                      />
+                    )}
+                  </Typography>
                   <Typography variant="body1" sx={{ mb: 2, fontWeight: 'medium' }}>
                     {transcriptionResults.transcript}
                   </Typography>

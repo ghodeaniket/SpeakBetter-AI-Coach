@@ -7,6 +7,7 @@ import {
   TranscriptionResult
 } from '../../../services/google-cloud/api-key/speechToText';
 import { GOOGLE_CLOUD_API_KEY } from '../../../services/google-cloud/config';
+import { v4 as uuidv4 } from 'uuid';
 import { db } from '../../../firebase';
 import { collection, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -384,10 +385,88 @@ export const clearAnalysisCache = (): void => {
   analysisCache.clear();
 };
 
+/**
+ * Process audio in offline mode using local processing
+ * This is a fallback when the app is offline and can't reach Google Cloud API
+ */
+export const processAudioOffline = async (
+  audioBlob: Blob
+): Promise<SpeechProcessingResult> => {
+  const startTime = Date.now();
+  
+  try {
+    // Create a local URL for the audio
+    const audioUrl = URL.createObjectURL(audioBlob);
+    
+    // Create an audio element to analyze the duration
+    const audioElement = new Audio(audioUrl);
+    
+    // Wait for the audio to load metadata
+    await new Promise((resolve, reject) => {
+      audioElement.addEventListener('loadedmetadata', resolve);
+      audioElement.addEventListener('error', reject);
+      audioElement.load();
+    });
+    
+    // Get the duration of the audio
+    const audioDurationSeconds = audioElement.duration;
+    
+    // Simple word count estimation (this is a very rough approximation)
+    // On average, a person speaks about 150 words per minute
+    const estimatedWordCount = Math.round((audioDurationSeconds / 60) * 150);
+    const estimatedWordsPerMinute = Math.round(estimatedWordCount / (audioDurationSeconds / 60));
+    
+    // Create a placeholder transcription result
+    // This is a simplified version as we can't do proper transcription offline
+    const transcriptionResult: TranscriptionResult = {
+      transcript: "This is an offline placeholder transcript. Actual transcription requires an internet connection.",
+      confidence: 0.5,
+      wordTimeOffsets: Array.from({ length: estimatedWordCount }).map((_, index) => ({
+        word: `word_${index + 1}`,
+        startTime: (audioDurationSeconds / estimatedWordCount) * index,
+        endTime: (audioDurationSeconds / estimatedWordCount) * (index + 1)
+      })),
+      fillerWords: {
+        count: Math.round(estimatedWordCount * 0.05), // Assume 5% filler words
+        words: []
+      }
+    };
+    
+    // Generate some placeholder filler words
+    const fillerWordOptions = ['um', 'uh', 'like', 'you know', 'so'];
+    for (let i = 0; i < transcriptionResult.fillerWords.count; i++) {
+      const randomIndex = Math.floor(Math.random() * fillerWordOptions.length);
+      const word = fillerWordOptions[randomIndex];
+      const timestamp = Math.random() * audioDurationSeconds;
+      
+      transcriptionResult.fillerWords.words.push({
+        word,
+        timestamp
+      });
+    }
+    
+    // Calculate processing time
+    const processingTimeMs = Date.now() - startTime;
+    
+    // Return the result
+    return {
+      transcriptionResult,
+      audioUrl,
+      processingTimeMs,
+      wordsPerMinute: estimatedWordsPerMinute,
+      clarityScore: 70 // Default placeholder score
+    };
+  } catch (error) {
+    console.error('Error processing audio offline:', error);
+    throw new Error(`Failed to process audio offline: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
+
 export default {
   uploadAudio,
   prepareAudioContent,
   processAudio,
+  processAudioOffline,
   calculateAccuracy,
   getFillerWordPercentage,
   getFrequentFillerWords,

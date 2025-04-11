@@ -45,6 +45,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSessionManagement } from '../../../features/session-management/hooks/useSessionManagement';
 import { useProgressData } from '../../../features/progress-tracking/hooks/useProgressData';
 import { LoadingScreen } from '../common';
+import { HelpGuide } from '../HelpGuide';
+import { useHelp } from '../../../App';
 
 // Dialog transition effect
 const Transition = React.forwardRef(function Transition(
@@ -137,6 +139,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
   
+  const { setShowHelp, setHelpTopic } = useHelp();
+  
   const handleWelcomeDialogClose = () => {
     setWelcomeDialogOpen(false);
   };
@@ -151,6 +155,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const handleStartFirstSession = () => {
     setWelcomeDialogOpen(false);
     navigate('/speech-to-text');
+  };
+  
+  const handleOpenHelp = (topic: string) => {
+    setHelpTopic(topic);
+    setShowHelp(true);
   };
   
   const menuItems = [
@@ -242,7 +251,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <List>
         <ListItem disablePadding>
           <ListItemButton 
-            onClick={() => setWelcomeDialogOpen(true)}
+            onClick={() => handleOpenHelp('recording')}
             sx={{ 
               borderRadius: 1, 
               mx: 1,
@@ -599,6 +608,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           transparent={true}
         />
       )}
+      
+      {/* Help Guide Dialog */}
+      <HelpGuide />
     </>
   );
 };

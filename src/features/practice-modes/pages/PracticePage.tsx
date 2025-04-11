@@ -17,7 +17,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { PracticeTypeSelector, GuidedReading, QASimulation } from '..';
-import { useUserProfile } from '../../../shared/hooks/useUserProfile';
+import { useAuth } from '../../../shared/contexts/AuthContext';
 
 type PracticeType = 'freestyle' | 'guided' | 'qa';
 
@@ -25,7 +25,7 @@ const PracticePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { type } = useParams<{ type?: string }>();
-  const { userProfile, loading: profileLoading } = useUserProfile();
+  const { currentUser, userProfile, isLoading: profileLoading } = useAuth();
   
   // Active step in practice flow
   const [activeStep, setActiveStep] = useState(0);
@@ -101,7 +101,7 @@ const PracticePage: React.FC = () => {
   }
   
   // If user is not logged in, show login prompt
-  if (!userProfile) {
+  if (!currentUser) {
     return (
       <Container>
         <Box sx={{ py: 4 }}>

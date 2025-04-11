@@ -32,8 +32,10 @@ import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 import SchoolIcon from '@mui/icons-material/School';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import TuneIcon from '@mui/icons-material/Tune';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 import { useAuth } from '../../shared/contexts/AuthContext';
+import { useHelp } from '../../App';
 import { SessionList } from '../session-management';
 import { useSessionManagement } from '../session-management/hooks/useSessionManagement';
 import { OnboardingTips } from '../auth/components';
@@ -76,6 +78,7 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { userProfile } = useAuth();
+  const { setShowHelp, setHelpTopic } = useHelp();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -120,6 +123,73 @@ const DashboardPage: React.FC = () => {
     }
   };
   
+  // Open help with specific topic
+  const openTopicHelp = (topic: string) => {
+    setHelpTopic(topic);
+    setShowHelp(true);
+  };
+  
+  // Get contextual tips based on user goals
+  const getContextualTips = (): Array<{title: string, description: string}> => {
+    const defaultTips = [
+      {
+        title: "Replace filler words with brief pauses",
+        description: "Practice being comfortable with silence"
+      },
+      {
+        title: "Vary your speaking pace",
+        description: "Slowing down for key points adds emphasis"
+      },
+      {
+        title: "Record and review yourself",
+        description: "Regular self-analysis accelerates improvement"
+      }
+    ];
+    
+    // If no user profile or no goals set, return default tips
+    if (!userProfile?.goals) {
+      return defaultTips;
+    }
+    
+    const userGoals = userProfile.goals;
+    const goalBasedTips = [];
+    
+    // Check for specific goals and add relevant tips
+    if (userGoals.some(g => g.focus.includes('pace'))) {
+      goalBasedTips.push({
+        title: "Practice with a metronome",
+        description: "Set it to 100-120 BPM to develop optimal pace"
+      });
+    }
+    
+    if (userGoals.some(g => g.focus.includes('fillers'))) {
+      goalBasedTips.push({
+        title: "Count your filler words",
+        description: "Track specific filler words to build awareness"
+      });
+    }
+    
+    if (userGoals.some(g => g.focus.includes('clarity'))) {
+      goalBasedTips.push({
+        title: "Practice tongue twisters daily",
+        description: "Improves articulation and muscle memory"
+      });
+    }
+    
+    if (userGoals.some(g => g.focus.includes('confidence'))) {
+      goalBasedTips.push({
+        title: "Use power poses before speaking",
+        description: "Stand tall for 2 minutes to boost confidence"
+      });
+    }
+    
+    // Return user-specific tips if we have them, otherwise defaults
+    return goalBasedTips.length > 0 ? goalBasedTips : defaultTips;
+  };
+  
+  // Get contextual tips
+  const speakingTips = getContextualTips();
+  
   // Calculate stats for the overview cards
   const completedSessions = sessions.filter(s => s.status === 'completed').length;
   const feedbackCount = sessions.filter(s => s.hasFeedback).length;
@@ -130,13 +200,30 @@ const DashboardPage: React.FC = () => {
         <Box sx={{ py: 4 }}>
           {/* Header */}
           <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" gutterBottom fontWeight="500">
-              SpeakBetter AI Coach
-            </Typography>
-            
-            <Typography variant="subtitle1" color="text.secondary">
-              Improve your speaking skills with AI-powered analysis and feedback
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box>
+                <Typography variant="h4" gutterBottom fontWeight="500">
+                  SpeakBetter AI Coach
+                </Typography>
+                
+                <Typography variant="subtitle1" color="text.secondary">
+                  Improve your speaking skills with AI-powered analysis and feedback
+                </Typography>
+              </Box>
+              
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<HelpOutlineIcon />}
+                size="small"
+                onClick={() => {
+                  setHelpTopic('recording');
+                  setShowHelp(true);
+                }}
+              >
+                Help Guide
+              </Button>
+            </Box>
           </Box>
           
           {/* Onboarding Tips for new users */}
@@ -267,7 +354,61 @@ const DashboardPage: React.FC = () => {
                   <Grid item xs={12} lg={4}>
                     <UserGoalsWidget />
                     <ProgressTrackingWidget sessions={sessions} />
-                    {/* Other widgets */}
+                    
+                    {/* Quick Tips Widget */}
+                    <Card elevation={1} sx={{ mt: 3, borderRadius: 2 }}>
+                      <CardContent>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                          <TipsAndUpdatesIcon sx={{ color: 'warning.main', mr: 1 }} />
+                          <Typography variant="h6">Speaking Tips</Typography>
+                        </Box>
+                        
+                        <List dense disablePadding>
+                          {speakingTips.map((tip, index) => (
+                            <ListItem key={index} sx={{ mt: index > 0 ? 1 : 0 }}>
+                              <ListItemIcon sx={{ minWidth: 36 }}>
+                                <Box sx={{ 
+                                  width: 24, 
+                                  height: 24, 
+                                  borderRadius: '50%', 
+                                  bgcolor: 'primaryLighter.main',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  <Typography variant="caption" color="primary.main" fontWeight="bold">{index + 1}</Typography>
+                                </Box>
+                              </ListItemIcon>
+                              <ListItemText 
+                                primary={tip.title} 
+                                secondary={tip.description}
+                              />
+                            </ListItem>
+                          ))}
+                        </List>
+                        
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                          <Button 
+                            variant="text" 
+                            color="primary" 
+                            size="small"
+                            startIcon={<HelpOutlineIcon />}
+                            onClick={() => openTopicHelp('tips')}
+                          >
+                            More Tips
+                          </Button>
+                          
+                          <Button 
+                            variant="text" 
+                            color="primary" 
+                            size="small"
+                            onClick={() => navigate('/progress')}
+                          >
+                            View Progress
+                          </Button>
+                        </Box>
+                      </CardContent>
+                    </Card>
                   </Grid>
                 </Grid>
             </Box>

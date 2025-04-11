@@ -4,6 +4,7 @@ import Routes from './shared/routes/Routes';
 import { AuthProvider } from './shared/contexts/AuthContext';
 import { SpeechProvider } from './shared/contexts/SpeechContext';
 import { UserProfileProvider } from './shared/contexts/UserProfileContext';
+import OfflineIndicator from './shared/components/OfflineIndicator';
 import globalStyles from './shared/theme/globalStyles';
 import theme from './shared/theme';
 
@@ -94,38 +95,34 @@ function App() {
   );
 }
 
+// Create a context for the help system
+export const HelpContext = React.createContext<{
+  showHelp: boolean;
+  setShowHelp: (show: boolean) => void;
+  helpTopic: string;
+  setHelpTopic: (topic: string) => void;
+}>({
+  showHelp: false,
+  setShowHelp: () => {},
+  helpTopic: '',
+  setHelpTopic: () => {},
+});
+
+// Custom hook to use the help context
+export const useHelp = () => React.useContext(HelpContext);
+
 /**
- * App content component with network status monitoring
+ * App content component with network status monitoring and help system
  */
 const AppContent: React.FC = () => {
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [showOfflineAlert, setShowOfflineAlert] = useState(false);
   const [firestoreConnectionError, setFirestoreConnectionError] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpTopic, setHelpTopic] = useState('');
 
   // Monitor network status
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOffline(false);
-      setShowOfflineAlert(true);
-      // Test Firebase connection when coming online
-      testFirebaseConnection();
-    };
-    
-    const handleOffline = () => {
-      setIsOffline(true);
-      setShowOfflineAlert(true);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
     // Initial connection test
     testFirebaseConnection();
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
   }, []);
 
   // Test Firebase connection
@@ -151,25 +148,19 @@ const AppContent: React.FC = () => {
 
   return (
     <>
-      <Routes />
-      
-      {/* Network status alert */}
-      <Snackbar
-        open={showOfflineAlert}
-        autoHideDuration={6000}
-        onClose={() => setShowOfflineAlert(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          severity={isOffline ? 'warning' : 'success'}
-          onClose={() => setShowOfflineAlert(false)}
-          sx={{ width: '100%' }}
-        >
-          {isOffline
-            ? 'You are offline. Some features may be limited.'
-            : 'You are back online!'}
-        </Alert>
-      </Snackbar>
+      <HelpContext.Provider value={{ showHelp, setShowHelp, helpTopic, setHelpTopic }}>
+        <Routes />
+        
+        {/* Global Offline Indicator that will handle network status alerts */}
+        <OfflineIndicator
+          onStatusChange={(isOnline) => {
+            if (isOnline) {
+              // Test Firebase connection when coming online
+              testFirebaseConnection();
+            }
+          }}
+        />
+      </HelpContext.Provider>
       
       {/* Firestore connection error alert */}
       <Snackbar

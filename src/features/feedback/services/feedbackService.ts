@@ -57,7 +57,7 @@ const FILLER_WORDS = [
 ];
 
 /**
- * Generate feedback based on speech analysis
+ * Generate feedback based on speech analysis and user goals
  */
 export const generateFeedback = (transcriptionResult: TranscriptionResult, userGoals?: string[]): FeedbackTemplate => {
   const {
@@ -78,6 +78,12 @@ export const generateFeedback = (transcriptionResult: TranscriptionResult, userG
   // Track identified strengths and areas for improvement
   const strengths: string[] = [];
   const improvements: string[] = [];
+  
+  // Check if user has specific goals to focus on
+  const hasPaceGoal = userGoals?.includes('pace');
+  const hasFillerWordsGoal = userGoals?.includes('fillers');
+  const hasClarityGoal = userGoals?.includes('clarity');
+  const hasConfidenceGoal = userGoals?.includes('confidence');
   
   // Analyze speaking pace
   if (wordsPerMinute < METRICS_THRESHOLDS.wordsPerMinute.slow) {
@@ -171,10 +177,23 @@ export const generateFeedback = (transcriptionResult: TranscriptionResult, userG
     improvement = "There were no significant issues in your speech pattern. ";
   }
   
-  // Generate suggestions
+  // Generate suggestions with priority on user goals
   let suggestion = '';
   
-  if (fillerWordPercentage > METRICS_THRESHOLDS.fillerWordPercentage.medium) {
+  // Prioritize suggestions based on user goals and metrics
+  if (hasFillerWordsGoal && fillerWordPercentage > METRICS_THRESHOLDS.fillerWordPercentage.low) {
+    suggestion = "To reduce filler words, try replacing them with brief pauses. Before speaking, take a deep breath and organize your thoughts. It's perfectly acceptable to pause briefly between ideas. You can also try listing common filler words you use and practice being conscious of them during conversations. ";
+  } else if (hasPaceGoal && (wordsPerMinute < METRICS_THRESHOLDS.wordsPerMinute.slow || wordsPerMinute > METRICS_THRESHOLDS.wordsPerMinute.fast)) {
+    if (wordsPerMinute < METRICS_THRESHOLDS.wordsPerMinute.slow) {
+      suggestion = "To increase your speaking pace, try practicing with a timer. Set a goal to cover specific content within a time limit, gradually increasing your pace with each practice session. Reading aloud from books or articles can also help you develop a more fluid rhythm. ";
+    } else {
+      suggestion = "To slow down your speaking pace, try inserting deliberate pauses between key points. Focus on clear articulation of each word, and consider marking pauses in your notes if you're using them. Taking a breath before important points can help pace yourself naturally. ";
+    }
+  } else if (hasClarityGoal && clarityScore < METRICS_THRESHOLDS.clarityScore.high) {
+    suggestion = "To improve speech clarity, try exaggerating your pronunciation during practice sessions. Focus on fully articulating each syllable, especially at the ends of words. Recording yourself and listening back can help identify specific words that need more attention. Daily vocal exercises can also strengthen your articulation muscles. ";
+  } else if (hasConfidenceGoal) {
+    suggestion = "To build speaking confidence, try the 'power pose' technique before important talks - stand tall with shoulders back for two minutes. Practice maintaining eye contact and speaking with conviction. Remember that confident speakers use deliberate pacing and aren't afraid of strategic pauses. ";
+  } else if (fillerWordPercentage > METRICS_THRESHOLDS.fillerWordPercentage.medium) {
     suggestion = "To reduce filler words, try replacing them with brief pauses. Before speaking, take a deep breath and organize your thoughts. It's perfectly acceptable to pause briefly between ideas. ";
   } else if (wordsPerMinute < METRICS_THRESHOLDS.wordsPerMinute.slow) {
     suggestion = "To increase your speaking pace, try practicing with a timer. Set a goal to cover specific content within a time limit, gradually increasing your pace with each practice session. ";
@@ -186,8 +205,29 @@ export const generateFeedback = (transcriptionResult: TranscriptionResult, userG
     suggestion = "For your next practice session, challenge yourself by varying your vocal tone more to add emphasis to key points. Consider recording yourself and identifying 2-3 specific aspects you'd like to improve. ";
   }
   
-  // Generate encouragement
-  const encouragement = "Keep practicing regularly, and you'll continue to see improvement. Remember that even professional speakers were once beginners. Each practice session builds your skills and confidence!";
+  // Generate encouragement based on user goals
+  let encouragement = "Keep practicing regularly, and you'll continue to see improvement. ";
+  
+  // Add goal-specific encouragement
+  if (userGoals && userGoals.length > 0) {
+    if (hasPaceGoal) {
+      encouragement += "Your focus on speaking pace is a great approach. With consistent practice, you'll find your optimal rhythm. ";
+    }
+    
+    if (hasFillerWordsGoal) {
+      encouragement += "Your awareness of filler words is the first step to reducing them. Continue being mindful of them during conversations. ";
+    }
+    
+    if (hasClarityGoal) {
+      encouragement += "Working on speech clarity will make your ideas more impactful. Keep practicing clear articulation. ";
+    }
+    
+    if (hasConfidenceGoal) {
+      encouragement += "Building confidence comes with practice. Each session is strengthening your speaking abilities. ";
+    }
+  }
+  
+  encouragement += "Remember that even professional speakers were once beginners. Each practice session builds your skills and confidence!";
   
   // Combine all sections into full text
   const fullText = `${positive}\n\n${improvement}\n\n${suggestion}\n\n${encouragement}`;
