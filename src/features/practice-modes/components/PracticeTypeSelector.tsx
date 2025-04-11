@@ -319,6 +319,6 @@ const PracticeTypeDetail: React.FC<PracticeTypeDetailProps> = ({
       </Grid>
     </Grid>
   );
-};
+});
 
 export default PracticeTypeSelector;

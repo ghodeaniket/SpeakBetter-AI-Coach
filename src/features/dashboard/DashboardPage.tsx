@@ -297,7 +297,7 @@ const DashboardPage: React.FC = () => {
                         </Card>
                       </Grid>
                       
-                      <Grid xs={12} lg={6}>
+                      <Grid item xs={12} lg={6}>
                         <Card elevation={1} sx={{ height: '100%' }}>
                           <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
