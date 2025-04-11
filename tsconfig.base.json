@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@speakbetter/core": ["packages/core/src"],
+      "@speakbetter/core/*": ["packages/core/src/*"],
+      "@speakbetter/api": ["packages/api/src"],
+      "@speakbetter/api/*": ["packages/api/src/*"],
+      "@speakbetter/ui": ["packages/ui/src"],
+      "@speakbetter/ui/*": ["packages/ui/src/*"],
+      "@speakbetter/web": ["packages/web/src"],
+      "@speakbetter/web/*": ["packages/web/src/*"],
+      "@speakbetter/mobile": ["packages/mobile/src"],
+      "@speakbetter/mobile/*": ["packages/mobile/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

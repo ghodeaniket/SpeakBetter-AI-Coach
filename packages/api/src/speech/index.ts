@@ -1,3 +1,2 @@
-// Speech API exports
-// Initially empty - will be populated with speech API implementations
-export {};
+// Speech service exports
+export * from './googleSpeech';
