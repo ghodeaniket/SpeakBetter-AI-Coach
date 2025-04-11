@@ -12,6 +12,7 @@ import { LocalStorageService, RemoteStorageService } from './storage';
 import { NetworkService } from './network';
 import { SpeechService } from './speech';
 import { AudioService } from './audio';
+import { VisualizationService } from './visualization';
 
 /**
  * Platform type
@@ -32,6 +33,7 @@ export interface Services {
   network: NetworkService;
   speech: SpeechService;
   audio: AudioService;
+  visualization: VisualizationService;
 }
 
 /**
@@ -93,6 +95,11 @@ export interface ServiceFactory {
    * Get an audio service instance
    */
   getAudioService(): AudioService;
+  
+  /**
+   * Get a visualization service instance
+   */
+  getVisualizationService(): VisualizationService;
   
   /**
    * Get all service instances
@@ -164,6 +171,11 @@ export abstract class BaseServiceFactory implements ServiceFactory {
   abstract getAudioService(): AudioService;
   
   /**
+   * Get a visualization service instance
+   */
+  abstract getVisualizationService(): VisualizationService;
+  
+  /**
    * Get all service instances
    */
   getAllServices(): Services {
@@ -178,6 +190,7 @@ export abstract class BaseServiceFactory implements ServiceFactory {
       network: this.getNetworkService(),
       speech: this.getSpeechService(),
       audio: this.getAudioService(),
+      visualization: this.getVisualizationService(),
     };
   }
 }

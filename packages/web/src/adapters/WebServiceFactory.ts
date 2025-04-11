@@ -15,7 +15,8 @@ import {
   RemoteStorageService,
   NetworkService,
   SpeechService,
-  AudioService
+  AudioService,
+  VisualizationService
 } from '@speakbetter/core/services';
 
 import { WebAuthService } from './auth/WebAuthService';
@@ -28,6 +29,7 @@ import { WebRemoteStorageService } from './storage/WebRemoteStorageService';
 import { WebNetworkService } from './network/WebNetworkService';
 import { WebSpeechService } from './speech/WebSpeechService';
 import { WebAudioService } from './audio/WebAudioService';
+import { WebVisualizationService } from './visualization/WebVisualizationService';
 
 /**
  * Web service factory implementation
@@ -46,6 +48,7 @@ export class WebServiceFactory extends BaseServiceFactory {
   private static networkService: NetworkService;
   private static speechService: SpeechService;
   private static audioService: AudioService;
+  private static visualizationService: VisualizationService;
   
   /**
    * Get an auth service instance
@@ -158,6 +161,16 @@ export class WebServiceFactory extends BaseServiceFactory {
       WebServiceFactory.audioService = new WebAudioService();
     }
     return WebServiceFactory.audioService;
+  }
+  
+  /**
+   * Get a visualization service instance
+   */
+  getVisualizationService(): VisualizationService {
+    if (!WebServiceFactory.visualizationService) {
+      WebServiceFactory.visualizationService = new WebVisualizationService();
+    }
+    return WebServiceFactory.visualizationService;
   }
 }
 

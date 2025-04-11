@@ -12,4 +12,5 @@ export * from './storage';
 export * from './network';
 export * from './speech';
 export * from './audio';
+export * from './visualization';
 export * from './factory';
