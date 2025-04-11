@@ -42,9 +42,44 @@ export const usePracticeMode = (props?: UsePracticeModeProps) => {
     qaQuestions: [],
     selectedContentId: null,
     selectedContent: null,
-    isLoading: false,
+    isLoading: true, // Start with loading state
     error: null
   });
+
+  // Initialize with static content to avoid empty states
+  useEffect(() => {
+    const initializeWithStaticContent = async () => {
+      try {
+        // If guided practice, load static guided content
+        if (state.practiceType === 'guided' && state.guidedContent.length === 0) {
+          const { getStaticGuidedReadingContent } = await import('../services/practiceContentService');
+          const staticContent = getStaticGuidedReadingContent();
+          setState(prev => ({ 
+            ...prev, 
+            guidedContent: staticContent,
+            isLoading: false 
+          }));
+        } 
+        // If QA practice, load static QA questions
+        else if (state.practiceType === 'qa' && state.qaQuestions.length === 0) {
+          const { getStaticQAQuestions } = await import('../services/practiceContentService');
+          const staticQuestions = getStaticQAQuestions();
+          setState(prev => ({ 
+            ...prev, 
+            qaQuestions: staticQuestions,
+            isLoading: false 
+          }));
+        } else {
+          setState(prev => ({ ...prev, isLoading: false }));
+        }
+      } catch (error) {
+        console.error('Error initializing with static content:', error);
+        setState(prev => ({ ...prev, isLoading: false }));
+      }
+    };
+
+    initializeWithStaticContent();
+  }, [state.practiceType]);
   
   /**
    * Set practice type and load relevant content

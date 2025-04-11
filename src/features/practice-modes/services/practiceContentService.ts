@@ -197,7 +197,7 @@ export const getRecommendedContent = async (
 };
 
 // Static content for fallback when Firestore is unavailable
-const getStaticGuidedReadingContent = (
+export const getStaticGuidedReadingContent = (
   filters?: {
     level?: 'beginner' | 'intermediate' | 'advanced';
     category?: string;
@@ -289,7 +289,7 @@ const getStaticGuidedReadingContent = (
 };
 
 // Static Q&A questions for fallback when Firestore is unavailable
-const getStaticQAQuestions = (
+export const getStaticQAQuestions = (
   filters?: {
     category?: string;
     difficulty?: 'easy' | 'medium' | 'hard';

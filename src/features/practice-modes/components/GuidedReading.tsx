@@ -377,9 +377,21 @@ const GuidedReading: React.FC = () => {
         </Grid>
       ) : (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="subtitle1">
+          <Typography variant="subtitle1" paragraph>
             No passages match your search criteria. Try adjusting your filters.
           </Typography>
+          <Button 
+            variant="outlined" 
+            color="primary"
+            startIcon={<SearchIcon />}
+            onClick={() => {
+              setSearchTerm('');
+              setDifficultyFilter('all');
+              setCategoryFilter('all');
+            }}
+          >
+            Clear all filters
+          </Button>
         </Paper>
       )}
     </Box>
