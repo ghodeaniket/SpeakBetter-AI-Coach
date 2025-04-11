@@ -42,7 +42,7 @@ const TabPanel = (props: TabPanelProps) => {
       )}
     </div>
   );
-});
+};
 
 interface PracticeTypeSelectorProps {
   onSelectType?: (type: 'freestyle' | 'guided' | 'qa') => void;
@@ -197,7 +197,7 @@ interface PracticeTypeDetailProps {
   isLoading: boolean;
 }
 
-const PracticeTypeDetail: React.FC<PracticeTypeDetailProps> = React.memo(({
+const PracticeTypeDetail: React.FC<PracticeTypeDetailProps> = ({
   title,
   description,
   icon,
