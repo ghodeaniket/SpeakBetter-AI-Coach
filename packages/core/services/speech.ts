@@ -1,6 +1,13 @@
 /**
  * Speech Service Interface
  * Provides speech-to-text and text-to-speech functionality
+ * 
+ * Implementation Notes:
+ * - Web: Uses Web Speech API with fallback to Google Cloud Speech API
+ * - Mobile: Should use platform-specific APIs (React Native Voice for iOS/Android)
+ * - Consider caching TTS results for frequently used phrases
+ * - Handle permission models differently across platforms
+ * - Implement interrupt/resume capability for long-running operations
  */
 
 import { AppError } from '../models/error';

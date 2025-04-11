@@ -1,6 +1,20 @@
 /**
  * Visualization Service Interface
  * Provides audio and speech visualization functionality
+ * 
+ * Implementation Notes:
+ * - Web: Uses Canvas API for high-performance drawing
+ * - Mobile:
+ *   - Consider react-native-skia for high-performance visualizations
+ *   - Fallback to react-native-svg for simpler visualizations
+ *   - Progressive enhancement: Implement basic visualizations first
+ * - Performance considerations:
+ *   - Throttle updates on mobile (60fps may not be necessary)
+ *   - Reduce drawing complexity based on device capability
+ *   - Consider using WebWorkers on web and background threads on mobile
+ * - Memory management:
+ *   - Ensure contexts are properly released when components unmount
+ *   - Minimize retained audio data
  */
 
 /**
@@ -14,9 +28,43 @@ export enum VisualizationType {
 }
 
 /**
+ * Visualization quality tier
+ * Controls the complexity and resource usage of visualizations
+ */
+export enum VisualizationQualityTier {
+  /**
+   * Minimal visualization with lowest resource usage
+   * Suitable for all devices including low-end mobile
+   */
+  MINIMAL = 'minimal',
+  
+  /**
+   * Standard visualization with moderate resource usage
+   * Suitable for most devices
+   */
+  STANDARD = 'standard',
+  
+  /**
+   * High-quality visualization with higher resource usage
+   * May not be suitable for low-end mobile devices
+   */
+  HIGH = 'high',
+  
+  /**
+   * Maximum quality visualization with highest resource usage
+   * Only recommended for high-end devices
+   */
+  MAXIMUM = 'maximum'
+}
+
+/**
  * Visualization options
  */
 export interface VisualizationOptions {
+  /**
+   * Quality tier to control level of detail and performance
+   */
+  qualityTier?: VisualizationQualityTier;
   /**
    * Type of visualization to generate
    */

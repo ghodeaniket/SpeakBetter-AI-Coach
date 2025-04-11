@@ -1,6 +1,16 @@
 /**
  * Audio Service Interface
  * Provides audio recording and playback functionality
+ * 
+ * Implementation Notes:
+ * - Web: Uses MediaRecorder API and AudioContext
+ * - Mobile: 
+ *   - iOS: AVAudioRecorder/AVAudioPlayer or react-native-audio-recorder-player
+ *   - Android: MediaRecorder/MediaPlayer or equivalent React Native libraries
+ * - Be mindful of background mode restrictions on mobile platforms
+ * - Sample rate and encoding options vary across platforms
+ * - Error handling should account for permission changes during recording
+ * - Memory management is critical for long recordings
  */
 
 /**

@@ -35,7 +35,36 @@ const DEFAULT_VISUALIZATION_OPTIONS: VisualizationOptions = {
   barRadius: 2,
   lineWidth: 2,
   mirror: false,
-  normalizationFactor: 0.8
+  normalizationFactor: 0.8,
+  qualityTier: VisualizationQualityTier.STANDARD
+};
+
+/**
+ * Quality tier presets with optimized settings for different performance levels
+ */
+const QUALITY_TIER_PRESETS: Record<VisualizationQualityTier, Partial<VisualizationOptions>> = {
+  [VisualizationQualityTier.MINIMAL]: {
+    barCount: 32,
+    animate: false,
+    showGrid: false,
+    mirror: false
+  },
+  [VisualizationQualityTier.STANDARD]: {
+    barCount: 64,
+    animate: true,
+    showGrid: false
+  },
+  [VisualizationQualityTier.HIGH]: {
+    barCount: 128,
+    animate: true,
+    showGrid: true
+  },
+  [VisualizationQualityTier.MAXIMUM]: {
+    barCount: 256,
+    animate: true,
+    showGrid: true,
+    mirror: true
+  }
 };
 
 /**
@@ -169,6 +198,118 @@ export class WebVisualizationService implements VisualizationService {
   private contextMap = new Map<VisualizationContext, HTMLCanvasElement>();
   
   /**
+   * Map to track animation frames per context
+   * Prevents memory leaks from abandoned animation loops
+   */
+  private animationFramesMap = new Map<VisualizationContext, number>();
+  
+  /**
+   * Track when contexts were last used
+   * Helps detect potentially abandoned contexts
+   */
+  private contextLastUsed = new Map<VisualizationContext, number>();
+  
+  /**
+   * Cleanup interval ID
+   */
+  private cleanupInterval: number | null = null;
+  
+  constructor() {
+    // Set up periodic cleanup check if in browser environment
+    if (typeof window !== 'undefined') {
+      this.cleanupInterval = window.setInterval(() => {
+        this.checkForAbandonedContexts();
+      }, 60000); // Check every minute
+    }
+  }
+  
+  /**
+   * Detect appropriate visualization quality tier based on device capabilities
+   */
+  detectQualityTier(): VisualizationQualityTier {
+    if (typeof window === 'undefined') {
+      return VisualizationQualityTier.STANDARD; // Default for non-browser environments
+    }
+    
+    // Check for low-end mobile devices
+    const isLowEndDevice = this.isLowEndDevice();
+    if (isLowEndDevice) {
+      return VisualizationQualityTier.MINIMAL;
+    }
+    
+    // Check for high-end devices
+    const isHighEndDevice = this.isHighEndDevice();
+    if (isHighEndDevice) {
+      return VisualizationQualityTier.HIGH;
+    }
+    
+    // Default to standard for most devices
+    return VisualizationQualityTier.STANDARD;
+  }
+  
+  /**
+   * Check if the current device is likely a low-end device
+   */
+  private isLowEndDevice(): boolean {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return false;
+    }
+    
+    // Check for low memory (less than 4GB)
+    if ('deviceMemory' in navigator && (navigator as any).deviceMemory < 4) {
+      return true;
+    }
+    
+    // Check for hardware concurrency (less than 4 cores)
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) {
+      return true;
+    }
+    
+    // Check if it's a mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // For mobile devices, perform an additional performance check
+    if (isMobile) {
+      // Simple performance test - can be enhanced with more sophisticated checks
+      const startTime = performance.now();
+      let counter = 0;
+      for (let i = 0; i < 1000000; i++) {
+        counter++;
+      }
+      const endTime = performance.now();
+      
+      // If the loop took more than 50ms, consider it a low-end device
+      return (endTime - startTime) > 50;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Check if the current device is likely a high-end device
+   */
+  private isHighEndDevice(): boolean {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return false;
+    }
+    
+    // Check for high memory (more than 8GB)
+    if ('deviceMemory' in navigator && (navigator as any).deviceMemory > 8) {
+      return true;
+    }
+    
+    // Check for hardware concurrency (more than 8 cores)
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency > 8) {
+      return true;
+    }
+    
+    // If GPU info is available, we could check that too
+    // This is a simplified version
+    
+    return false;
+  }
+  
+  /**
    * Create a visualization context
    */
   createContext(container: HTMLElement, width: number, height: number): VisualizationContext {
@@ -184,6 +325,9 @@ export class WebVisualizationService implements VisualizationService {
     const context = new CanvasVisualizationContext(canvas);
     this.contextMap.set(context, canvas);
     
+    // Record creation time
+    this.contextLastUsed.set(context, Date.now());
+    
     return context;
   }
   
@@ -192,10 +336,96 @@ export class WebVisualizationService implements VisualizationService {
    */
   releaseContext(context: VisualizationContext): void {
     const canvas = this.contextMap.get(context);
-    if (canvas) {
-      canvas.parentElement?.removeChild(canvas);
-      this.contextMap.delete(context);
+    
+    // Cancel any active animation frames for this context
+    const animationFrame = this.animationFramesMap.get(context);
+    if (animationFrame) {
+      if (typeof window !== 'undefined') {
+        window.cancelAnimationFrame(animationFrame);
+      }
+      this.animationFramesMap.delete(context);
     }
+    
+    // Remove the canvas from DOM
+    if (canvas) {
+      // Remove from parent if attached
+      if (canvas.parentElement) {
+        canvas.parentElement.removeChild(canvas);
+      }
+      
+      // Clear any WebGL contexts if present
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (gl) {
+        const loseContext = gl.getExtension('WEBGL_lose_context');
+        if (loseContext) {
+          loseContext.loseContext();
+        }
+      }
+      
+      // Release mappings
+      this.contextMap.delete(context);
+      this.contextLastUsed.delete(context);
+    }
+  }
+  
+  /**
+   * Check for abandoned contexts that haven't been used recently
+   * and warn about potential memory leaks
+   */
+  private checkForAbandonedContexts(): void {
+    const now = Date.now();
+    const threshold = 5 * 60 * 1000; // 5 minutes
+    
+    this.contextLastUsed.forEach((lastUsedTime, context) => {
+      if (now - lastUsedTime > threshold) {
+        console.warn('Potential memory leak: Visualization context has not been used for 5 minutes', {
+          lastUsed: new Date(lastUsedTime).toISOString(),
+          timeSinceLastUse: Math.floor((now - lastUsedTime) / 1000) + ' seconds'
+        });
+      }
+    });
+  }
+  
+  /**
+   * Update the last used timestamp for a context
+   */
+  private updateContextUsage(context: VisualizationContext): void {
+    this.contextLastUsed.set(context, Date.now());
+  }
+  
+  /**
+   * Downsample audio data to reduce processing requirements
+   * This is useful for low-end devices or when high precision is not required
+   * 
+   * @param audioData The original audio data
+   * @param targetLength The desired output length
+   * @returns Downsampled audio data
+   */
+  private downsampleAudioData(audioData: Uint8Array, targetLength: number): Uint8Array {
+    if (audioData.length <= targetLength) {
+      return audioData; // No downsampling needed
+    }
+    
+    const result = new Uint8Array(targetLength);
+    const ratio = audioData.length / targetLength;
+    
+    for (let i = 0; i < targetLength; i++) {
+      // Calculate the range of samples to average
+      const startIndex = Math.floor(i * ratio);
+      const endIndex = Math.floor((i + 1) * ratio);
+      
+      // Calculate average for this range
+      let sum = 0;
+      for (let j = startIndex; j < endIndex; j++) {
+        sum += audioData[j];
+      }
+      
+      // Store the average in the result
+      const count = endIndex - startIndex;
+      result[i] = count > 0 ? Math.floor(sum / count) : 0;
+    }
+    
+    return result;
   }
   
   /**
@@ -206,8 +436,31 @@ export class WebVisualizationService implements VisualizationService {
     audioData: Uint8Array,
     options: VisualizationOptions
   ): void {
-    // Merge with default options
-    const visualizationOptions = { ...DEFAULT_VISUALIZATION_OPTIONS, ...options };
+    // Update last used timestamp
+    this.updateContextUsage(context);
+    
+    // Determine quality tier
+    const qualityTier = options.qualityTier || this.detectQualityTier();
+    
+    // Get quality tier preset
+    const qualityPreset = QUALITY_TIER_PRESETS[qualityTier];
+    
+    // Merge options with the following priority:
+    // 1. User-provided options (highest priority)
+    // 2. Quality tier preset (middle priority)
+    // 3. Default options (lowest priority)
+    const visualizationOptions = { 
+      ...DEFAULT_VISUALIZATION_OPTIONS, 
+      ...qualityPreset,
+      ...options 
+    };
+    
+    // For minimal quality, potentially reduce data to improve performance
+    let processedAudioData = audioData;
+    if (qualityTier === VisualizationQualityTier.MINIMAL && audioData.length > 128) {
+      // Downsample data for better performance
+      processedAudioData = this.downsampleAudioData(audioData, 128);
+    }
     
     // Clear context
     context.clear();
@@ -227,16 +480,22 @@ export class WebVisualizationService implements VisualizationService {
     // Draw visualization based on type
     switch (visualizationOptions.type) {
       case VisualizationType.WAVEFORM:
-        this.drawWaveformVisualization(context, audioData, visualizationOptions);
+        this.drawWaveformVisualization(context, processedAudioData, visualizationOptions);
         break;
       case VisualizationType.FREQUENCY:
-        this.drawFrequencyVisualization(context, audioData, visualizationOptions);
+        this.drawFrequencyVisualization(context, processedAudioData, visualizationOptions);
         break;
       case VisualizationType.VOLUME:
-        this.drawVolumeVisualization(context, audioData, visualizationOptions);
+        this.drawVolumeVisualization(context, processedAudioData, visualizationOptions);
         break;
       case VisualizationType.SPECTROGRAM:
-        this.drawSpectrogramVisualization(context, audioData, visualizationOptions);
+        // Spectrogram may need higher resolution data even at lower quality settings
+        // Only use downsampled data for minimal quality
+        if (qualityTier === VisualizationQualityTier.MINIMAL) {
+          this.drawSpectrogramVisualization(context, processedAudioData, visualizationOptions);
+        } else {
+          this.drawSpectrogramVisualization(context, audioData, visualizationOptions);
+        }
         break;
       default:
         throw new Error(`Unsupported visualization type: ${visualizationOptions.type}`);
@@ -555,6 +814,8 @@ export class WebVisualizationService implements VisualizationService {
     totalDuration: number,
     options?: Partial<VisualizationOptions>
   ): void {
+    // Update last used timestamp
+    this.updateContextUsage(context);
     // Merge with default options
     const visualizationOptions = { 
       ...DEFAULT_VISUALIZATION_OPTIONS, 
@@ -675,6 +936,8 @@ export class WebVisualizationService implements VisualizationService {
     audioBuffer: AudioBuffer,
     options?: Partial<VisualizationOptions>
   ): void {
+    // Update last used timestamp
+    this.updateContextUsage(context);
     const visualizationOptions = { 
       ...DEFAULT_VISUALIZATION_OPTIONS, 
       ...options,
@@ -865,5 +1128,41 @@ export class WebVisualizationService implements VisualizationService {
     return typeof document !== 'undefined' && 
            typeof window !== 'undefined' &&
            !!document.createElement('canvas').getContext('2d');
+  }
+  
+  /**
+   * Clean up all resources used by this service
+   * Should be called when the service is no longer needed
+   */
+  cleanup(): void {
+    // Cancel the cleanup interval
+    if (this.cleanupInterval !== null && typeof window !== 'undefined') {
+      window.clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    
+    // Cancel any pending animation frames
+    if (this.animationFrame !== null && typeof window !== 'undefined') {
+      window.cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
+    }
+    
+    // Cancel any context-specific animation frames
+    if (typeof window !== 'undefined') {
+      this.animationFramesMap.forEach((frame) => {
+        window.cancelAnimationFrame(frame);
+      });
+    }
+    
+    // Release all contexts
+    const contexts = Array.from(this.contextMap.keys());
+    contexts.forEach(context => {
+      this.releaseContext(context);
+    });
+    
+    // Clear all maps
+    this.contextMap.clear();
+    this.animationFramesMap.clear();
+    this.contextLastUsed.clear();
   }
 }
