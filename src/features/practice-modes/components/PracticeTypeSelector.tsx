@@ -197,7 +197,8 @@ interface PracticeTypeDetailProps {
   isLoading: boolean;
 }
 
-const PracticeTypeDetail: React.FC<PracticeTypeDetailProps> = ({
+// Using React.memo for the PracticeTypeDetail component with correct syntax
+const PracticeTypeDetail = React.memo<PracticeTypeDetailProps>(({
   title,
   description,
   icon,
