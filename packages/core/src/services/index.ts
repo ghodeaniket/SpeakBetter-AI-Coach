@@ -1,6 +1,4 @@
-// Export all service interfaces
 export * from './auth';
-export * from './speech';
-export * from './session';
+export * from './speechToText';
+export * from './feedback';
 export * from './storage';
-export * from './localStorageService';

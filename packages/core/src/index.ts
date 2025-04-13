@@ -1,13 +1,11 @@
-// Core exports
-
-// Re-export from models
+// Models
 export * from './models';
 
-// Re-export from services
+// Services
 export * from './services';
 
-// Re-export from utils
-export * from './utils/index';
+// Utils
+export * from './utils';
 
-// Re-export from validation
+// Validation
 export * from './validation';
