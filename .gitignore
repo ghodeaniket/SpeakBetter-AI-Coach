@@ -41,3 +41,10 @@ dist-ssr
 **/android/app/build
 **/ios/Pods
 **/ios/build
+
+# Temporary project directories
+ReactNativeTemp/
+TempRNProject/
+temp_expo_project/
+temp_expo_project2/
+temp_project/
