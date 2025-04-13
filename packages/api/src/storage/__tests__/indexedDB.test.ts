@@ -25,9 +25,9 @@ const mockDB = {
 const mockOpenRequest = {
   result: mockDB,
   error: null,
-  onerror: null as any,
-  onsuccess: null as any,
-  onupgradeneeded: null as any
+  onerror: null,
+  onsuccess: null,
+  onupgradeneeded: null
 };
 
 // Mock indexedDB global
@@ -36,19 +36,23 @@ const indexedDB = {
 };
 
 // Add indexedDB to global
-(global as any).indexedDB = indexedDB;
+global.indexedDB = indexedDB;
 
 // Helper function to simulate request success
-function simulateRequestSuccess(request: any, result: any) {
+function simulateRequestSuccess(request, result) {
   request.result = result;
-  request.onsuccess && request.onsuccess(new Event('success'));
+  if (request.onsuccess) {
+    request.onsuccess(new Event('success'));
+  }
   return result;
 }
 
 // Helper function to simulate request error
-function simulateRequestError(request: any, error: any) {
+function simulateRequestError(request, error) {
   request.error = error;
-  request.onerror && request.onerror(new Event('error'));
+  if (request.onerror) {
+    request.onerror(new Event('error'));
+  }
   throw error;
 }
 
@@ -85,7 +89,7 @@ describe('IndexedDBStorage', () => {
       // Arrange
       const key = 'test-key';
       const data = { name: 'Test Data' };
-      const putRequest = { onsuccess: null as any, onerror: null as any, error: null };
+      const putRequest = { onsuccess: null, onerror: null, error: null };
       
       mockStore.put.mockReturnValueOnce(putRequest);
       
@@ -114,7 +118,7 @@ describe('IndexedDBStorage', () => {
       const key = 'test-key';
       const data = { name: 'Test Data' };
       const error = new Error('Test error');
-      const putRequest = { onsuccess: null as any, onerror: null as any, error };
+      const putRequest = { onsuccess: null, onerror: null, error };
       
       mockStore.put.mockReturnValueOnce(putRequest);
       
@@ -143,7 +147,7 @@ describe('IndexedDBStorage', () => {
       const key = 'test-key';
       const data = { name: 'Test Data' };
       const storedItem = { key, data, storedAt: Date.now() };
-      const getRequest = { onsuccess: null as any, onerror: null as any, error: null, result: storedItem };
+      const getRequest = { onsuccess: null, onerror: null, error: null, result: storedItem };
       
       mockStore.get.mockReturnValueOnce(getRequest);
       
@@ -167,7 +171,7 @@ describe('IndexedDBStorage', () => {
     it('should return null if item does not exist', async () => {
       // Arrange
       const key = 'non-existent-key';
-      const getRequest = { onsuccess: null as any, onerror: null as any, error: null, result: undefined };
+      const getRequest = { onsuccess: null, onerror: null, error: null, result: undefined };
       
       mockStore.get.mockReturnValueOnce(getRequest);
       
@@ -190,7 +194,7 @@ describe('IndexedDBStorage', () => {
     it('should remove an item from IndexedDB', async () => {
       // Arrange
       const key = 'test-key';
-      const deleteRequest = { onsuccess: null as any, onerror: null as any, error: null };
+      const deleteRequest = { onsuccess: null, onerror: null, error: null };
       
       mockStore.delete.mockReturnValueOnce(deleteRequest);
       
@@ -214,7 +218,7 @@ describe('IndexedDBStorage', () => {
   describe('clear', () => {
     it('should clear all items from IndexedDB', async () => {
       // Arrange
-      const clearRequest = { onsuccess: null as any, onerror: null as any, error: null };
+      const clearRequest = { onsuccess: null, onerror: null, error: null };
       
       mockStore.clear.mockReturnValueOnce(clearRequest);
       

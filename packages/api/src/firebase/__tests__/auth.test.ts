@@ -49,7 +49,7 @@ describe('FirebaseAuthService', () => {
     projectId: 'mock-project-id'
   };
   
-  let authService: FirebaseAuthService;
+  let authService;
   
   beforeEach(() => {
     authService = new FirebaseAuthService(config);

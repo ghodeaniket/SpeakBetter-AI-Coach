@@ -7,7 +7,7 @@ export * from './models';
 export * from './services';
 
 // Re-export from utils
-export * from './utils';
+export * from './utils/index';
 
 // Re-export from validation
 export * from './validation';

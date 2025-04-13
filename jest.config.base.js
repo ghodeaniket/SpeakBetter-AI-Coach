@@ -5,8 +5,10 @@ const config = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: '<rootDir>/tsconfig.json',
+      useESM: true,
     }],
   },
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
     '^@speakbetter/(.*)$': '<rootDir>/../$1/src',
@@ -19,7 +21,7 @@ const config = {
   ],
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['text', 'lcov'],
-  testMatch: ['<rootDir>/src/**/*.test.{ts,tsx}'],
+  testMatch: ['<rootDir>/src/**/*.test.{ts,tsx}', '<rootDir>/services/**/*.test.{ts,tsx}'],
 };
 
-module.exports = config;
+export default config;

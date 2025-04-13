@@ -18,7 +18,7 @@ export function isNotEmpty(value: string): boolean {
 /**
  * Validates if a number is within a range
  */
-export function isInRange(value: number, min: number, max: number): boolean {
+export function isValueInRange(value: number, min: number, max: number): boolean {
   return value >= min && value <= max;
 }
 
@@ -27,5 +27,5 @@ export function isInRange(value: number, min: number, max: number): boolean {
  */
 export function isValidAudioDuration(seconds: number): boolean {
   // Minimum 5 seconds, maximum 5 minutes (300 seconds)
-  return isInRange(seconds, 5, 300);
+  return isValueInRange(seconds, 5, 300);
 }

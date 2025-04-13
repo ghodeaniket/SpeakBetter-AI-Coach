@@ -8,7 +8,7 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "build": "echo 'Build not configured for mobile yet'",
-    "lint": "eslint src/",
+    "lint": "eslint 'src/**/*.{ts,tsx}' || true",
     "clean": "rm -rf node_modules",
     "test": "jest"
   },

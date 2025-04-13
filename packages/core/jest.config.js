@@ -1,5 +1,5 @@
 /** @type {import('jest').Config} */
-const baseConfig = require('../../jest.config.base');
+import baseConfig from '../../jest.config.base.js';
 
 const config = {
   ...baseConfig,
@@ -7,4 +7,4 @@ const config = {
   rootDir: './',
 };
 
-module.exports = config;
+export default config;

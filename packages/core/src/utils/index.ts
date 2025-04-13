@@ -1,4 +1,15 @@
 // Utility functions
+import { AppError } from './errors';
+
+// Export error utilities
+export { AppError };
+
+/**
+ * Check if a value is within a range (inclusive)
+ */
+export function isInRange(value: number, min: number, max: number): boolean {
+  return value >= min && value <= max;
+}
 
 /**
  * Format date to a human-readable string
@@ -36,13 +47,13 @@ export function generateId(): string {
 /**
  * Debounce function
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T, 
   ms = 300
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout>;
   
-  return function(this: any, ...args: Parameters<T>) {
+  return function(this: unknown, ...args: Parameters<T>) {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn.apply(this, args), ms);
   };

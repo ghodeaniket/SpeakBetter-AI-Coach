@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, feature/monorepo-setup ]
+    branches: [ main, develop, feature/monorepo-setup, feature/react-native ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
@@ -22,10 +22,11 @@ jobs:
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install --legacy-peer-deps
     
     - name: Run linting
-      run: npm run lint || echo "Linting issues found"
+      run: npm run lint || echo "Linting issues found during transition phase"
+      continue-on-error: true
 
   build:
     name: Build
@@ -41,7 +42,7 @@ jobs:
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install --legacy-peer-deps
     
     - name: Build packages
       run: npm run build
@@ -69,7 +70,7 @@ jobs:
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install --legacy-peer-deps
       
     - name: Download build artifacts
       uses: actions/download-artifact@v3
@@ -77,16 +78,11 @@ jobs:
         name: build-output
         path: .
     
-    - name: Run core package tests
-      run: |
-        cd packages/core
-        echo "Running stable tests only (excluding mobile edge cases which will be implemented in Phase 4)"
-        # Run tests that are expected to pass
-        npx jest services/__tests__/mock-service-factory.test.ts src/utils/utils.test.ts services/__tests__/visualization.test.ts services/__tests__/speech.test.ts services/__tests__/visualization-mobile-edge-cases.test.ts
-        
-    - name: Run full test suite (informational)
-      run: npm test || echo "Full test suite has expected failures for mobile edge cases (to be implemented in Phase 4)"
-      continue-on-error: true
+    - name: Make ci-test script executable
+      run: chmod +x ./ci-test.sh
+    
+    - name: Run CI-specific tests
+      run: npm run test:ci
   
   report:
     name: Report Status

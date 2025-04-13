@@ -11,7 +11,7 @@
  */
 
 import { SpeechService, TranscriptionOptions, SpeechSynthesisOptions } from '../speech';
-import { AppError, ErrorCodes, ErrorCategory } from '../models/error';
+import { AppError, ErrorCodes, ErrorCategory, createAppError } from '../../models/error';
 
 /**
  * Extended mock implementation of SpeechService for testing edge cases
@@ -46,7 +46,7 @@ class MockMobileSpeechService implements SpeechService {
     // Setup transcribe with mobile edge cases
     this.transcribe.mockImplementation(async (options: TranscriptionOptions) => {
       if (this._permissionStatus === 'denied') {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.SPEECH_RECOGNITION_ERROR,
           'Microphone permission denied',
           { category: ErrorCategory.PERMISSION }
@@ -54,7 +54,7 @@ class MockMobileSpeechService implements SpeechService {
       }
       
       if (this._isTranscribing) {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.SPEECH_RECOGNITION_ERROR,
           'Already transcribing',
           { category: ErrorCategory.SPEECH }
@@ -69,7 +69,7 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check for backgrounding
         if (this._isBackgrounded) {
-          throw new AppError(
+          throw createAppError(
             ErrorCodes.SPEECH_RECOGNITION_ERROR,
             'Application backgrounded',
             { category: ErrorCategory.SPEECH }
@@ -78,7 +78,7 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check for connectivity issues
         if (this._connectivityStatus === 'offline') {
-          throw new AppError(
+          throw createAppError(
             ErrorCodes.NETWORK_ERROR,
             'No internet connection',
             { category: ErrorCategory.NETWORK }
@@ -88,7 +88,7 @@ class MockMobileSpeechService implements SpeechService {
         if (this._connectivityStatus === 'poor') {
           // Simulate timeout
           await new Promise(resolve => setTimeout(resolve, 100));
-          throw new AppError(
+          throw createAppError(
             ErrorCodes.NETWORK_ERROR,
             'Request timed out',
             { category: ErrorCategory.NETWORK }
@@ -97,7 +97,7 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check for memory pressure
         if (this._memoryPressure === 'critical') {
-          throw new AppError(
+          throw createAppError(
             ErrorCodes.MEMORY_ERROR,
             'Insufficient memory',
             { category: ErrorCategory.SYSTEM }
@@ -106,7 +106,7 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check if cancelled during processing
         if (!this._isTranscribing) {
-          throw new AppError(
+          throw createAppError(
             ErrorCodes.SPEECH_RECOGNITION_ERROR,
             'Transcription cancelled',
             { category: ErrorCategory.SPEECH }
@@ -128,7 +128,7 @@ class MockMobileSpeechService implements SpeechService {
     // Setup synthesize with mobile edge cases
     this.synthesize.mockImplementation(async (options: SpeechSynthesisOptions) => {
       if (this._isSynthesizing) {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.SPEECH_SYNTHESIS_ERROR,
           'Already synthesizing',
           { category: ErrorCategory.SPEECH }
@@ -143,7 +143,7 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check for backgrounding
         if (this._isBackgrounded) {
-          throw new AppError(
+          throw createAppError(
             ErrorCodes.SPEECH_SYNTHESIS_ERROR,
             'Application backgrounded',
             { category: ErrorCategory.SPEECH }
@@ -159,7 +159,7 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check if cancelled
         if (!this._isSynthesizing) {
-          throw new AppError(
+          throw createAppError(
             ErrorCodes.SPEECH_SYNTHESIS_ERROR,
             'Synthesis cancelled',
             { category: ErrorCategory.SPEECH }

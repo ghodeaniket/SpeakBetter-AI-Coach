@@ -9,7 +9,7 @@
  */
 
 import { AudioService, AudioRecordingOptions, AudioRecordingState } from '../audio';
-import { AppError, ErrorCodes, ErrorCategory } from '../models/error';
+import { AppError, ErrorCodes, ErrorCategory, createAppError } from '../../models/error';
 
 /**
  * Mock implementation of AudioService for testing mobile edge cases
@@ -73,7 +73,7 @@ class MockMobileAudioService implements AudioService {
     // Implement startRecording
     this.startRecording.mockImplementation(async (options?: AudioRecordingOptions) => {
       if (this._permissionStatus !== 'granted') {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.PERMISSION_DENIED,
           'Microphone permission denied',
           { category: ErrorCategory.PERMISSION }
@@ -81,7 +81,7 @@ class MockMobileAudioService implements AudioService {
       }
       
       if (this._recordingState.isRecording) {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.ALREADY_RECORDING,
           'Already recording',
           { category: ErrorCategory.AUDIO }
@@ -89,7 +89,7 @@ class MockMobileAudioService implements AudioService {
       }
       
       if (this._isBackgrounded) {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.BACKGROUND_RECORDING_ERROR,
           'Cannot start recording in background',
           { category: ErrorCategory.AUDIO }
@@ -111,7 +111,7 @@ class MockMobileAudioService implements AudioService {
       // Check for interruptions that might have occurred during setup
       if (this._audioInterruption) {
         this._recordingState.isRecording = false;
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.RECORDING_INTERRUPTED,
           `Recording interrupted by ${this._audioInterruption}`,
           { category: ErrorCategory.AUDIO }
@@ -122,7 +122,7 @@ class MockMobileAudioService implements AudioService {
     // Implement stopRecording
     this.stopRecording.mockImplementation(async () => {
       if (!this._recordingState.isRecording) {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.NOT_RECORDING,
           'Not currently recording',
           { category: ErrorCategory.AUDIO }
@@ -167,7 +167,7 @@ class MockMobileAudioService implements AudioService {
       }
       
       if (this._isBackgrounded) {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.BACKGROUND_RECORDING_ERROR,
           'Cannot resume recording in background',
           { category: ErrorCategory.AUDIO }
@@ -204,7 +204,7 @@ class MockMobileAudioService implements AudioService {
       // Check for interruptions
       if (this._audioInterruption === 'call') {
         this._isPlaying = false;
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.PLAYBACK_INTERRUPTED,
           'Playback interrupted by call',
           { category: ErrorCategory.AUDIO }
@@ -215,7 +215,7 @@ class MockMobileAudioService implements AudioService {
     // Implement pauseAudio
     this.pauseAudio.mockImplementation(() => {
       if (!this._isPlaying) {
-        throw new AppError(
+        throw createAppError(
           ErrorCodes.NOT_PLAYING,
           'Audio is not currently playing',
           { category: ErrorCategory.AUDIO }
