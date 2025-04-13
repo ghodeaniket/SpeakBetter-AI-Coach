@@ -1,0 +1,35 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@speakbetter/web": ["../../packages/web/src"],
+      "@speakbetter/core": ["../../packages/core/src"],
+      "@speakbetter/api": ["../../packages/api/src"],
+      "@speakbetter/ui": ["../../packages/ui/src"],
+      "@speakbetter/state": ["../../packages/state/src"]
+    }
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/web" },
+    { "path": "../../packages/core" },
+    { "path": "../../packages/api" },
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/state" }
+  ]
+}

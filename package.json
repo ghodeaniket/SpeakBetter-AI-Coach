@@ -9,7 +9,9 @@
   "type": "module",
   "scripts": {
     "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@speakbetter/web-app",
     "build": "turbo run build",
+    "build:web": "turbo run build --filter=@speakbetter/web-app",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
     "test": "turbo run test",
