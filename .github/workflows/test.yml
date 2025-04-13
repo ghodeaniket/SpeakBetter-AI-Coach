@@ -1,11 +1,34 @@
 name: Test Workflow
 
 on:
+  push:
+    branches: [ feature/monorepo-setup ]
   workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Hello World
-        run: echo "Hello World!"
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Check Environment
+        run: |
+          echo "🏃‍♂️ Workflow running on branch: ${{ github.ref }}"
+          echo "📂 Repository: ${{ github.repository }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "🔄 Event: ${{ github.event_name }}"
+          
+      - name: List Files in Workflow Directory
+        run: |
+          echo "📄 Checking workflow files:"
+          ls -la .github/workflows/
+          
+      - name: Display Workflow Content
+        run: |
+          echo "📝 Content of CI workflow file:"
+          cat .github/workflows/ci.yml
+          
+      - name: Simulate Success
+        run: |
+          echo "✅ Test workflow completed successfully!"

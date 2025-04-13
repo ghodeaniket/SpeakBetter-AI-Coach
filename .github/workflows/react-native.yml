@@ -2,7 +2,7 @@ name: React Native
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, feature/monorepo-setup ]
     paths:
       - 'packages/mobile/**'
   pull_request:

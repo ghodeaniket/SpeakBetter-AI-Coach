@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/monorepo-setup ]
     tags:
       - 'v*'
   workflow_dispatch:
