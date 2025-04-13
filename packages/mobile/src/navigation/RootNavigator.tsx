@@ -3,8 +3,9 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View } from 'react-native';
 import { MainTabNavigator } from './MainTabNavigator';
 import { AuthStack } from './AuthStack';
-import { useAuth } from '../contexts';
+import { useAuthStore } from '@speakbetter/state';
 import { useStyles } from '../theme/useStyles';
+import { AuthService } from '@speakbetter/core';
 
 // Define the root navigation types
 export type RootStackParamList = {
@@ -14,8 +15,20 @@ export type RootStackParamList = {
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-export const RootNavigator: React.FC = () => {
-  const { user, loading } = useAuth();
+interface RootNavigatorProps {
+  authService: AuthService;
+  firestoreService: any; // Use proper type
+  googleCloudConfig: {
+    apiKey: string;
+  };
+}
+
+export const RootNavigator: React.FC<RootNavigatorProps> = ({
+  authService,
+  firestoreService,
+  googleCloudConfig
+}) => {
+  const { user, isLoading } = useAuthStore();
   
   const styles = useStyles(theme => ({
     loaderContainer: {
@@ -27,7 +40,7 @@ export const RootNavigator: React.FC = () => {
   }));
   
   // Show a loading indicator while checking authentication state
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#4A55A2" />
@@ -42,9 +55,22 @@ export const RootNavigator: React.FC = () => {
       }}
     >
       {user ? (
-        <Stack.Screen name="Main" component={MainTabNavigator} />
+        <Stack.Screen 
+          name="Main" 
+          component={MainTabNavigator} 
+          initialParams={{
+            firestoreService,
+            googleCloudConfig
+          }}
+        />
       ) : (
-        <Stack.Screen name="Auth" component={AuthStack} />
+        <Stack.Screen 
+          name="Auth" 
+          component={AuthStack} 
+          initialParams={{
+            authService
+          }}
+        />
       )}
     </Stack.Navigator>
   );
