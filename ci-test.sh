@@ -1,24 +1,82 @@
 #!/bin/bash
 set -e
 
-echo "🧪 Running tests with --passWithNoTests flag for CI..."
+echo "🧪 Running tests for all packages..."
 
-# Run tests in each package with appropriate flags
-for pkg in api core mobile ui web; do
-  echo "Testing @speakbetter/$pkg..."
-  cd "packages/$pkg"
+# Create an array to track failures
+declare -a failed_packages
+
+# Function to run tests for a package and track failures
+run_package_tests() {
+  local pkg=$1
+  echo "📦 Testing @speakbetter/$pkg..."
   
-  # For core package specifically, skip the mobile edge case tests
-  if [ "$pkg" = "core" ]; then
-    echo "Running core tests with filters..."
-    npx jest services/__tests__/mock-service-factory.test.ts src/utils/utils.test.ts services/__tests__/visualization.test.ts services/__tests__/speech.test.ts services/__tests__/visualization-mobile-edge-cases.test.ts --passWithNoTests --no-cache || echo "Some core tests failed - expected during Phase 3->4 transition"
+  cd "packages/$pkg" || { echo "Failed to enter packages/$pkg directory"; return 1; }
+  
+  if [ -f "package.json" ]; then
+    if grep -q "\"test\":" package.json; then
+      echo "  ▶️ Running tests..."
+      # Use npm test to run the package's test script
+      npm test -- --passWithNoTests || {
+        echo "  ❌ Tests failed for @speakbetter/$pkg"
+        failed_packages+=("$pkg")
+        return 1
+      }
+    else
+      echo "  ⚠️ No test script found in package.json"
+    fi
   else
-    echo "Running tests with --passWithNoTests flag..."
-    npx jest --passWithNoTests --no-cache || echo "Tests failed - expected during Phase 3->4 transition"
+    echo "  ⚠️ No package.json found"
   fi
   
-  cd ../..
+  echo "  ✅ Tests passed for @speakbetter/$pkg"
+  cd ../.. || { echo "Failed to return to root directory"; return 1; }
+  return 0
+}
+
+# Test core package first since others depend on it
+run_package_tests "core"
+
+# Test other packages
+for pkg in api state ui web mobile; do
+  run_package_tests "$pkg"
 done
 
-echo "✅ CI tests completed - failures are expected during the transition phase"
-echo "The actual CI workflow will handle these expected failures appropriately"
+# Check apps if they have tests
+echo "🧪 Testing apps..."
+for app in web-app mobile-app; do
+  if [ -d "apps/$app" ]; then
+    echo "📱 Testing @speakbetter/$app..."
+    cd "apps/$app" || { echo "Failed to enter apps/$app directory"; continue; }
+    
+    if [ -f "package.json" ]; then
+      if grep -q "\"test\":" package.json; then
+        echo "  ▶️ Running tests..."
+        npm test -- --passWithNoTests || {
+          echo "  ❌ Tests failed for @speakbetter/$app"
+          failed_packages+=("$app")
+        }
+      else
+        echo "  ⚠️ No test script found in package.json"
+      fi
+    else
+      echo "  ⚠️ No package.json found"
+    fi
+    
+    cd ../.. || { echo "Failed to return to root directory"; continue; }
+  fi
+done
+
+# Report results
+echo "🔍 Test Summary:"
+if [ ${#failed_packages[@]} -eq 0 ]; then
+  echo "✅ All tests passed!"
+  exit 0
+else
+  echo "❌ Failed packages:"
+  for pkg in "${failed_packages[@]}"; do
+    echo "  - @speakbetter/$pkg"
+  done
+  echo "💡 Fix the failing tests before proceeding."
+  exit 1
+fi
