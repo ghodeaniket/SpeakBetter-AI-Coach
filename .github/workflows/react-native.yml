@@ -1,0 +1,99 @@
+name: React Native
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/mobile/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'packages/mobile/**'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    # Only run this job once Phase 4 (React Native) implementation begins
+    if: false  # Disabled until Phase 4
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Gradle
+      uses: gradle/gradle-build-action@v2
+    
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'adopt'
+        java-version: '11'
+    
+    - name: Build Android
+      run: |
+        cd packages/mobile/android
+        ./gradlew assembleDebug
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-debug.apk
+        path: packages/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+        
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    # Only run this job once Phase 4 (React Native) implementation begins
+    if: false  # Disabled until Phase 4
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Install CocoaPods
+      run: |
+        cd packages/mobile/ios
+        pod install
+    
+    - name: Build iOS
+      run: |
+        cd packages/mobile/ios
+        xcodebuild -workspace SpeakBetter.xcworkspace -scheme SpeakBetter -configuration Debug -sdk iphonesimulator
+
+  check-structure:
+    name: Check Mobile Structure
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check Mobile Package Structure
+      run: |
+        if [ -d "packages/mobile" ]; then
+          echo "Mobile package exists, checking structure..."
+          if [ -d "packages/mobile/src" ]; then
+            echo "Source directory exists"
+          else
+            echo "Source directory is missing"
+          fi
+        else
+          echo "Mobile package not yet initialized (waiting for Phase 4)"
+        fi
