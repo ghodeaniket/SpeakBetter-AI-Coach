@@ -1,7 +1,6 @@
-/** @type {import('jest').Config} */
-const baseConfig = require('../../jest.config.base.js');
+import baseConfig from '../../jest.config.base.js';
 
-module.exports = {
+export default {
   ...baseConfig,
   displayName: 'mobile',
   rootDir: './',

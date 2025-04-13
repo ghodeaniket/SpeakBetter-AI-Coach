@@ -1,4 +1,4 @@
-const baseConfig = require('../../jest.config.base.js');
+import baseConfig from '../../jest.config.base.js';
 
 /** @type {import('jest').Config} */
 const config = {
@@ -14,4 +14,4 @@ const config = {
   },
 };
 
-module.exports = config;
+export default config;

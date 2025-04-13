@@ -1,5 +1,4 @@
-/** @type {import('jest').Config} */
-module.exports = {
+export default {
   projects: ['<rootDir>/packages/*/jest.config.js'],
   collectCoverageFrom: [
     '<rootDir>/packages/*/src/**/*.{ts,tsx}',

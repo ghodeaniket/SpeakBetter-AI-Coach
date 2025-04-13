@@ -26,7 +26,19 @@ const createMockSpeechToTextService = (): SpeechToTextService => {
     
     analyzeTranscription: (transcription: string): SpeechAnalysis => {
       const words = transcription.split(/\s+/).filter(Boolean);
-      const fillerWordCounts = this.getFillerWordStatistics(transcription);
+      const fillerWords = ['um', 'uh', 'like', 'so', 'you know'];
+      
+      // Use local function instead of this reference
+      const getFillerWordStats = (text: string): Record<string, number> => {
+        const wordList = text.toLowerCase().split(/\s+/).filter(Boolean);
+        
+        return fillerWords.reduce((counts, filler) => {
+          counts[filler] = wordList.filter(word => word === filler || word === `${filler},`).length;
+          return counts;
+        }, {} as Record<string, number>);
+      };
+      
+      const fillerWordCounts = getFillerWordStats(transcription);
       const totalFillerWords = Object.values(fillerWordCounts).reduce((a, b) => a + b, 0);
       
       return {
@@ -101,7 +113,8 @@ describe('SpeechToTextService interface', () => {
     
     expect(result).toBeDefined();
     expect(result.transcription).toBe(transcription);
-    expect(result.metrics.totalWords).toBe(8);
+    // The split by whitespace gives 9 words for "This is a test with some um filler words"
+    expect(result.metrics.totalWords).toBe(9); 
   });
   
   it('should detect filler words correctly', () => {
