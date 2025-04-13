@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-native",
+    "types": ["react-native", "jest"],
+    "baseUrl": ".",
+    "paths": {
+      "@speakbetter/mobile/*": ["../../packages/mobile/src/*"],
+      "@speakbetter/core/*": ["../../packages/core/src/*"],
+      "@speakbetter/api/*": ["../../packages/api/src/*"],
+      "@speakbetter/ui/*": ["../../packages/ui/src/*"],
+      "@speakbetter/state/*": ["../../packages/state/src/*"]
+    }
+  },
+  "include": ["src/**/*", "index.js", "metro.config.js"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
+}
