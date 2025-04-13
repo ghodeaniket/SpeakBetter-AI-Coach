@@ -1,3 +1,8 @@
+// Firebase
 export * from './firebase';
-export * from './storage';
+
+// Speech
 export * from './speech';
+
+// Storage
+export * from './storage';

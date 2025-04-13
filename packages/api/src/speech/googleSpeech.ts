@@ -1,13 +1,15 @@
-import { SpeechService, SpeechAnalysisResult } from '@speakbetter/core';
+import { SpeechAnalysis } from '@speakbetter/core';
 
 /**
- * Google Cloud implementation of the SpeechService interface
+ * Legacy Google Cloud Speech Service
+ * @deprecated Use the new googleSpeechService implementation instead
  */
-export class GoogleSpeechService implements SpeechService {
+export class GoogleSpeechService {
   /**
    * Transcribe audio to text and analyze the speech
    * @param audioBlob The audio blob to transcribe
    * @param options Optional configuration for transcription
+   * @deprecated Use the new googleSpeechService implementation instead
    */
   async transcribeAudio(
     audioBlob: Blob, 
@@ -16,9 +18,9 @@ export class GoogleSpeechService implements SpeechService {
       enhancedModel?: boolean;
       wordTimestamps?: boolean;
     }
-  ): Promise<SpeechAnalysisResult> {
-    // To be implemented in Phase 2
-    console.log('GoogleSpeechService.transcribeAudio() called - to be implemented', { options });
+  ): Promise<any> {
+    console.warn('GoogleSpeechService is deprecated. Use createGoogleSpeechService from googleSpeechService.ts instead');
+    console.log('GoogleSpeechService.transcribeAudio() called - deprecated', { options });
     
     // Return stub data for now
     return {
@@ -38,6 +40,7 @@ export class GoogleSpeechService implements SpeechService {
    * Synthesize text to speech
    * @param text The text to synthesize
    * @param options Optional configuration for synthesis
+   * @deprecated Use the new googleSpeechService implementation instead
    */
   async synthesizeSpeech(
     text: string, 
@@ -48,8 +51,8 @@ export class GoogleSpeechService implements SpeechService {
       audioType?: 'mp3' | 'wav' | 'ogg';
     }
   ): Promise<ArrayBuffer> {
-    // To be implemented in Phase 2
-    console.log('GoogleSpeechService.synthesizeSpeech() called - to be implemented', { text, options });
+    console.warn('GoogleSpeechService is deprecated. Use createGoogleSpeechService from googleSpeechService.ts instead');
+    console.log('GoogleSpeechService.synthesizeSpeech() called - deprecated', { text, options });
     
     // Return empty buffer for now
     return new ArrayBuffer(0);
@@ -58,7 +61,9 @@ export class GoogleSpeechService implements SpeechService {
 
 /**
  * Create a Google Speech service instance
+ * @deprecated Use createGoogleSpeechService from googleSpeechService.ts instead
  */
-export function createGoogleSpeechService(): SpeechService {
+export function createLegacyGoogleSpeechService(): GoogleSpeechService {
+  console.warn('createGoogleSpeechService from googleSpeech.ts is deprecated. Use createGoogleSpeechService from googleSpeechService.ts instead');
   return new GoogleSpeechService();
 }

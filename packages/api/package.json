@@ -6,8 +6,8 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "echo 'Build placeholder for API package during transition phase'",
-    "dev": "tsup --watch",
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
     "lint": "eslint src/ || true",
     "clean": "rm -rf dist node_modules",
     "test": "jest"
@@ -15,6 +15,10 @@
   "dependencies": {
     "@speakbetter/core": "*",
     "firebase": "^11.6.0",
+    "firebase/app": "^11.6.0",
+    "firebase/auth": "^11.6.0",
+    "firebase/firestore": "^11.6.0",
+    "firebase/storage": "^11.6.0",
     "@google-cloud/speech": "^7.0.1",
     "@google-cloud/text-to-speech": "^6.0.1"
   },
