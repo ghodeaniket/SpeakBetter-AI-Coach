@@ -7,12 +7,14 @@ This document outlines the boundaries and interactions between packages in the S
 ### @speakbetter/core
 
 Responsible for:
+
 - Defining data models and interfaces used across the application
 - Providing service interfaces that define the contract for implementation
 - Offering shared utility functions for common tasks
 - Implementing validation logic that is platform-agnostic
 
 This package does NOT:
+
 - Implement service interfaces
 - Contain platform-specific code
 - Depend on any other package in the monorepo
@@ -20,34 +22,40 @@ This package does NOT:
 ### @speakbetter/api
 
 Responsible for:
+
 - Implementing the service interfaces defined in @speakbetter/core
 - Handling API communication with external services
 - Providing platform-specific adapters for service implementations
 - Managing authentication and authorization with external services
 
 This package depends on:
+
 - @speakbetter/core (for interfaces and models)
 
 ### @speakbetter/ui
 
 Responsible for:
+
 - Defining shared UI component interfaces
 - Implementing platform-agnostic UI components
 - Providing a shared design system
 - Implementing UI-related custom hooks
 
 This package depends on:
+
 - @speakbetter/core (for models and utilities)
 
 ### @speakbetter/web
 
 Responsible for:
+
 - Implementing the web application UI
 - Providing web-specific adapters for services
 - Managing web-specific functionality and routing
 - Integrating the shared components with web-specific features
 
 This package depends on:
+
 - @speakbetter/core (for models, services, and utilities)
 - @speakbetter/api (for API implementations)
 - @speakbetter/ui (for shared UI components)
@@ -55,12 +63,14 @@ This package depends on:
 ### @speakbetter/mobile
 
 Responsible for:
+
 - Implementing the mobile application UI
 - Providing mobile-specific adapters for services
 - Managing mobile-specific functionality and navigation
 - Integrating shared components with mobile-specific features
 
 This package depends on:
+
 - @speakbetter/core (for models, services, and utilities)
 - @speakbetter/api (for API implementations)
 - @speakbetter/ui (for shared UI components)
@@ -103,7 +113,7 @@ export class FirebaseAuthService implements AuthService {
 }
 
 // In @speakbetter/web/src/app.tsx
-import { FirebaseAuthService } from '@speakbetter/api';
+import { FirebaseAuthService } from "@speakbetter/api";
 
 const authService = new FirebaseAuthService();
 // Use the service
@@ -164,10 +174,10 @@ export class GoogleSpeechService implements SpeechService {
     try {
       // API call
     } catch (error) {
-      if (error.code === 'QUOTA_EXCEEDED') {
-        throw new Error('Speech recognition quota exceeded');
+      if (error.code === "QUOTA_EXCEEDED") {
+        throw new Error("Speech recognition quota exceeded");
       }
-      throw new Error('Failed to transcribe audio');
+      throw new Error("Failed to transcribe audio");
     }
   }
 }
@@ -193,23 +203,27 @@ Example:
 
 ```typescript
 // Unit test for SpeechService implementation
-describe('GoogleSpeechService', () => {
-  it('transcribes audio correctly', async () => {
+describe("GoogleSpeechService", () => {
+  it("transcribes audio correctly", async () => {
     const service = new GoogleSpeechService();
     const mockBlob = new Blob();
-    
+
     // Mock the Google API client
     service.client.recognize = jest.fn().mockResolvedValue({
-      results: [{
-        alternatives: [{
-          transcript: 'Hello world',
-        }]
-      }]
+      results: [
+        {
+          alternatives: [
+            {
+              transcript: "Hello world",
+            },
+          ],
+        },
+      ],
     });
-    
+
     const result = await service.transcribeAudio(mockBlob);
-    
-    expect(result.transcription).toBe('Hello world');
+
+    expect(result.transcription).toBe("Hello world");
   });
 });
 ```

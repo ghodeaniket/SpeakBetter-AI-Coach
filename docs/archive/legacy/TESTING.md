@@ -10,6 +10,7 @@ This document provides instructions for testing the fix for the Firebase Extensi
 ## Steps to Test
 
 1. Deploy the Firebase configuration (if not already done):
+
    ```bash
    cd "/Users/aniketghode/development/Planned Projects/Speak Better/speakbetter-ai-coach"
    npm install -g firebase-tools
@@ -18,15 +19,18 @@ This document provides instructions for testing the fix for the Firebase Extensi
    ```
 
 2. Start the application locally:
+
    ```bash
    cd "/Users/aniketghode/development/Planned Projects/Speak Better/speakbetter-ai-coach"
    npm run dev
    ```
 
 3. Open the application in your browser:
+
    - Navigate to http://localhost:5177 (or whatever port is shown in the terminal)
 
 4. Test Speech-to-Text Extension:
+
    - Go to the "Speech-to-Text" section with the "Fixed Version" (from the left navigation menu)
    - Record a short audio sample
    - Click "Transcribe Audio (Live API)"
@@ -52,6 +56,7 @@ If you encounter issues:
 ## What Was Fixed
 
 1. Created proper Firebase configuration files:
+
    - `.firebaserc`
    - `firebase.json`
    - `extension.yaml`
@@ -60,6 +65,7 @@ If you encounter issues:
    - `firestore.indexes.json`
 
 2. Updated collection names in the code to match extension configuration:
+
    - Changed `speech_transcriptions` to `transcriptions` for Speech-to-Text
    - Verified `tts_requests` for Text-to-Speech
 

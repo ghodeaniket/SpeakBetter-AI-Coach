@@ -49,6 +49,7 @@ Two new components have been added to demonstrate the direct API integration:
 ## How to Use
 
 1. **Speech-to-Text**:
+
    - Navigate to "Speech-to-Text" → "Direct API" in the sidebar
    - Record audio using the built-in recorder
    - Click "Transcribe Audio (Direct API)"
@@ -96,14 +97,14 @@ Both components include comprehensive error handling and debug logging to help d
 
 ## Comparison to Extensions
 
-| Feature | Firebase Extensions | Direct API |
-|---------|---------------------|------------|
-| Setup Complexity | Higher (requires extension deployment) | Lower (just npm install) |
-| Control over API Options | Limited | Complete |
-| Error Visibility | Abstract/indirect | Clear/direct |
-| Processing Latency | Higher | Lower |
-| Billing Model | Same | Same |
-| Security | Higher (server-side) | Lower (client-side) |
+| Feature                  | Firebase Extensions                    | Direct API               |
+| ------------------------ | -------------------------------------- | ------------------------ |
+| Setup Complexity         | Higher (requires extension deployment) | Lower (just npm install) |
+| Control over API Options | Limited                                | Complete                 |
+| Error Visibility         | Abstract/indirect                      | Clear/direct             |
+| Processing Latency       | Higher                                 | Lower                    |
+| Billing Model            | Same                                   | Same                     |
+| Security                 | Higher (server-side)                   | Lower (client-side)      |
 
 ## Next Steps
 

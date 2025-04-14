@@ -15,6 +15,7 @@ The direct Google Cloud API integration requires proper authentication to access
 ### Option 1: Using Firebase Admin SDK (Recommended for Production)
 
 1. **Create a Service Account**:
+
    - Go to your [Firebase Console](https://console.firebase.google.com/)
    - Navigate to Project Settings > Service Accounts
    - Click "Generate New Private Key"
@@ -22,13 +23,14 @@ The direct Google Cloud API integration requires proper authentication to access
 
 2. **Set up Environment Variables**:
    - Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of your service account JSON file:
+
      ```bash
      # Linux/macOS
      export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your-service-account-file.json"
-     
+
      # Windows (Command Prompt)
      set GOOGLE_APPLICATION_CREDENTIALS=C:\path\to\your-service-account-file.json
-     
+
      # Windows (PowerShell)
      $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\your-service-account-file.json"
      ```
@@ -38,16 +40,19 @@ The direct Google Cloud API integration requires proper authentication to access
 For client-side authentication during development, you can use Firebase Authentication with custom claims:
 
 1. **Configure Firebase Authentication**:
+
    - Ensure Firebase Authentication is enabled in your project
    - Set up authentication methods (e.g., Google, Email/Password)
 
 2. **Add Custom Claims for API Access**:
+
    - Using Firebase Admin SDK in your server-side code:
+
      ```javascript
-     const admin = require('firebase-admin');
-     
+     const admin = require("firebase-admin");
+
      admin.auth().setCustomUserClaims(uid, {
-       'https://www.googleapis.com/auth/cloud-platform': true
+       "https://www.googleapis.com/auth/cloud-platform": true,
      });
      ```
 
@@ -72,12 +77,15 @@ For client-side authentication during development, you can use Firebase Authenti
    exports.transcribeSpeech = functions.https.onCall(async (data, context) => {
      // Check authentication
      if (!context.auth) {
-       throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+       throw new functions.https.HttpsError(
+         "unauthenticated",
+         "User must be authenticated",
+       );
      }
-     
+
      // Initialize the Speech client
      const speech = new SpeechClient();
-     
+
      // Process the request
      try {
        const [response] = await speech.recognize({
@@ -85,14 +93,14 @@ For client-side authentication during development, you can use Firebase Authenti
            content: data.audioContent,
          },
          config: {
-           languageCode: data.languageCode || 'en-US',
+           languageCode: data.languageCode || "en-US",
            // other config options
          },
        });
-       
+
        return response;
      } catch (error) {
-       throw new functions.https.HttpsError('internal', error.message);
+       throw new functions.https.HttpsError("internal", error.message);
      }
    });
    ```

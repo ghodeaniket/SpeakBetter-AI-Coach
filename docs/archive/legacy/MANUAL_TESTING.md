@@ -5,12 +5,14 @@ This guide provides step-by-step instructions for manually testing the integrati
 ## Prerequisites
 
 Ensure that:
+
 1. The application is running (currently at http://localhost:5179/)
 2. You have access to the Firebase Console for the project "speakbetter-dev-722cc"
 
 ## Testing Speech-to-Text Integration
 
 ### Step 1: Configure Firebase Extension (if not already done)
+
 1. Go to the Firebase Console: https://console.firebase.google.com/project/speakbetter-dev-722cc/extensions
 2. Install the "Speech-to-Text" extension if not already installed
 3. Configure with the following settings:
@@ -20,6 +22,7 @@ Ensure that:
    - Sample rate: `16000`
 
 ### Step 2: Test in the Application
+
 1. Navigate to the application in your browser
 2. From the left menu, select "Speech-to-Text" with the "Fixed Version" chip
 3. Record a short audio sample
@@ -30,6 +33,7 @@ Ensure that:
    - Filler words are detected correctly
 
 ### Step 3: Verify in Firebase Console
+
 1. Go to Firestore in the Firebase Console
 2. Navigate to the "transcriptions" collection
 3. Verify a new document has been created
@@ -38,6 +42,7 @@ Ensure that:
 ## Testing Text-to-Speech Integration
 
 ### Step 1: Configure Firebase Extension (if not already done)
+
 1. Go to the Firebase Console: https://console.firebase.google.com/project/speakbetter-dev-722cc/extensions
 2. Install the "Text-to-Speech" extension if not already installed
 3. Configure with the following settings:
@@ -47,6 +52,7 @@ Ensure that:
    - Audio encoding: `MP3`
 
 ### Step 2: Test in the Application
+
 1. Navigate to the application in your browser
 2. From the left menu, select "Text-to-Speech" with the "Live API" chip
 3. Enter some text or select one of the sample texts
@@ -58,6 +64,7 @@ Ensure that:
    - The voice matches the selected settings
 
 ### Step 3: Verify in Firebase Console
+
 1. Go to Firestore in the Firebase Console
 2. Navigate to the "tts_requests" collection
 3. Verify a new document has been created
@@ -68,16 +75,19 @@ Ensure that:
 If the integrations don't work as expected:
 
 1. **Check Console Logs:**
+
    - Open the browser developer tools (F12 or right-click > Inspect)
    - Go to the Console tab
    - Look for any error messages related to Firebase
 
 2. **Verify Collection Names:**
+
    - Double-check that the collection names in the code match those in the Firebase Extensions
    - SpeechToTextLive.tsx should use `transcriptions`
    - TextToSpeechLive.tsx should use `tts_requests`
 
 3. **Check Firebase Extensions Settings:**
+
    - Go to the Extensions tab in Firebase Console
    - Verify that the extensions are installed and configured correctly
    - Check the extension logs for any errors

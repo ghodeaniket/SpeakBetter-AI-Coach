@@ -1,56 +1,77 @@
-# SpeakBetter AI Coach Web App
+# @speakbetter/web-app
 
-This is the web application entry point for the SpeakBetter AI Coach platform.
+Web application entry point for SpeakBetter AI Coach.
 
-## Getting Started
+## Overview
 
-### Prerequisites
+This package serves as the entry point for the web version of SpeakBetter AI Coach:
 
-- Node.js 18+
-- npm 9+
+- Application entry point
+- Build configuration
+- Environment-specific settings
+- Web-specific assets
 
-### Development
+## Directory Structure
 
-1. Clone the repository (if you haven't already)
-2. Install dependencies from the root of the monorepo:
-   ```bash
-   npm install
-   ```
-3. Copy `.env.example` to `.env.local` and fill in your environment variables
-   ```bash
-   cp .env.example .env.local
-   ```
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+```
+web-app/
+├── public/          # Static assets
+├── src/
+│   ├── main.tsx     # Application entry point
+│   └── index.css    # Global styles
+├── index.html       # HTML template
+├── vite.config.ts   # Build configuration
+└── README.md        # This file
+```
 
-### Building for Production
+## Development
 
 ```bash
+# Start development server
+npm run dev
+
+# Build for production
 npm run build
-```
 
-### Running Tests
+# Preview production build
+npm run preview
 
-```bash
+# Run tests
 npm run test
+
+# Lint code
+npm run lint
 ```
 
-## Architecture
+## Environment Variables
 
-This web app serves as the entry point for the SpeakBetter AI Coach web platform. It:
+Create a `.env` file in the root of this package with the following variables:
 
-1. Initializes environment-specific configurations
-2. Loads the main App component from `@speakbetter/web`
-3. Mounts the application in the DOM
+```
+VITE_FIREBASE_API_KEY=your-firebase-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-firebase-auth-domain
+VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-firebase-storage-bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-firebase-messaging-sender-id
+VITE_FIREBASE_APP_ID=your-firebase-app-id
+VITE_GOOGLE_CLOUD_API_KEY=your-google-cloud-api-key
+```
 
-The actual implementation of components and business logic is kept in the shared packages:
+## Build Configuration
 
-- `@speakbetter/web`: Web-specific components and logic
-- `@speakbetter/core`: Shared business logic and models
-- `@speakbetter/api`: API client implementations
-- `@speakbetter/ui`: Shared UI components
+This package uses Vite for building and bundling. The configuration can be found in `vite.config.ts`.
+
+## Deployment
+
+To deploy the web application:
+
+1. Build the application: `npm run build`
+2. Deploy the `dist` directory to your hosting provider of choice (Firebase Hosting, Vercel, Netlify, etc.)
+
+## Dependencies
+
+- `@speakbetter/web`: Web implementation
+- `@speakbetter/core`: Core models and interfaces
+- `@speakbetter/api`: API implementations
+- `@speakbetter/ui`: UI component interfaces
 - `@speakbetter/state`: State management
-
-This separation allows for better code organization and sharing between platforms.

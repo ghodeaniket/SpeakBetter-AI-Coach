@@ -27,12 +27,14 @@ SpeakBetter AI Coach is structured as a monorepo using Turborepo. The key direct
 ### Installation
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/your-org/speakbetter-ai-coach.git
    cd speakbetter-ai-coach
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
@@ -175,6 +177,7 @@ type(scope): description
 ```
 
 Types:
+
 - `feat`: A new feature
 - `fix`: A bug fix
 - `docs`: Documentation changes
@@ -184,6 +187,7 @@ Types:
 - `chore`: Changes to the build process or auxiliary tools
 
 Example:
+
 ```
 feat(core): add user validation functions
 ```
