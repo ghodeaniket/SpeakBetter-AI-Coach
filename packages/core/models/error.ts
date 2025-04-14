@@ -15,6 +15,8 @@ export enum ErrorCategory {
   STORAGE = 'storage',
   AUDIO = 'audio',
   SPEECH = 'speech',
+  PERMISSION = 'permission',
+  SYSTEM = 'system',
   UNKNOWN = 'unknown'
 }
 
@@ -75,6 +77,43 @@ export interface AppError {
 }
 
 /**
+ * Error class implementation
+ * Extends Error to provide structured error handling
+ */
+export class AppErrorImpl extends Error implements AppError {
+  public code: string;
+  public details?: string;
+  public category: ErrorCategory;
+  public severity: ErrorSeverity;
+  public originalError?: Error;
+  public recoverable: boolean;
+  public recoveryAction?: string;
+
+  constructor(
+    code: string,
+    message: string,
+    options: {
+      details?: string;
+      category?: ErrorCategory;
+      severity?: ErrorSeverity;
+      originalError?: Error;
+      recoverable?: boolean;
+      recoveryAction?: string;
+    } = {}
+  ) {
+    super(message);
+    this.name = 'AppError';
+    this.code = code;
+    this.details = options.details;
+    this.category = options.category || ErrorCategory.UNKNOWN;
+    this.severity = options.severity || ErrorSeverity.ERROR;
+    this.originalError = options.originalError;
+    this.recoverable = options.recoverable !== undefined ? options.recoverable : false;
+    this.recoveryAction = options.recoveryAction;
+  }
+}
+
+/**
  * Error factory function
  * Creates a structured AppError object
  */
@@ -118,6 +157,7 @@ export const ErrorCodes = {
   NETWORK_OFFLINE: 'network/offline',
   NETWORK_REQUEST_FAILED: 'network/request-failed',
   NETWORK_TIMEOUT: 'network/timeout',
+  NETWORK_ERROR: 'network/error',
   
   // Storage errors
   STORAGE_UPLOAD_FAILED: 'storage/upload-failed',
@@ -131,8 +171,20 @@ export const ErrorCodes = {
   AUDIO_RECORDING_ERROR: 'audio/recording-error',
   AUDIO_PLAYBACK_ERROR: 'audio/playback-error',
   
+  // Mobile specific audio errors
+  PERMISSION_DENIED: 'permission/denied',
+  ALREADY_RECORDING: 'audio/already-recording',
+  NOT_RECORDING: 'audio/not-recording',
+  RECORDING_INTERRUPTED: 'audio/recording-interrupted',
+  BACKGROUND_RECORDING_ERROR: 'audio/background-recording-error',
+  PLAYBACK_INTERRUPTED: 'audio/playback-interrupted',
+  NOT_PLAYING: 'audio/not-playing',
+  MEMORY_ERROR: 'system/memory-error',
+  
   // Speech errors
   SPEECH_RECOGNITION_FAILED: 'speech/recognition-failed',
+  SPEECH_RECOGNITION_ERROR: 'speech/recognition-error',
+  SPEECH_SYNTHESIS_ERROR: 'speech/synthesis-error',
   SPEECH_SYNTHESIS_FAILED: 'speech/synthesis-failed',
   SPEECH_NO_SPEECH_DETECTED: 'speech/no-speech-detected',
   

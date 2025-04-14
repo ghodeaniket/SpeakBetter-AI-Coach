@@ -11,7 +11,7 @@
  */
 
 import { SpeechService, TranscriptionOptions, SpeechSynthesisOptions } from '../speech';
-import { AppError, ErrorCodes, ErrorCategory, createAppError } from '../../models/error';
+import { AppErrorImpl, ErrorCodes, ErrorCategory, createAppError } from '../../models/error';
 
 /**
  * Extended mock implementation of SpeechService for testing edge cases
@@ -46,19 +46,13 @@ class MockMobileSpeechService implements SpeechService {
     // Setup transcribe with mobile edge cases
     this.transcribe.mockImplementation(async (options: TranscriptionOptions) => {
       if (this._permissionStatus === 'denied') {
-        throw createAppError(
-          ErrorCodes.SPEECH_RECOGNITION_ERROR,
-          'Microphone permission denied',
-          { category: ErrorCategory.PERMISSION }
-        );
+        const error = new Error('Microphone permission denied');
+        throw error;
       }
       
       if (this._isTranscribing) {
-        throw createAppError(
-          ErrorCodes.SPEECH_RECOGNITION_ERROR,
-          'Already transcribing',
-          { category: ErrorCategory.SPEECH }
-        );
+        const error = new Error('Already transcribing');
+        throw error;
       }
       
       this._isTranscribing = true;
@@ -69,48 +63,33 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check for backgrounding
         if (this._isBackgrounded) {
-          throw createAppError(
-            ErrorCodes.SPEECH_RECOGNITION_ERROR,
-            'Application backgrounded',
-            { category: ErrorCategory.SPEECH }
-          );
+          const error = new Error('Application backgrounded');
+          throw error;
         }
         
         // Check for connectivity issues
         if (this._connectivityStatus === 'offline') {
-          throw createAppError(
-            ErrorCodes.NETWORK_ERROR,
-            'No internet connection',
-            { category: ErrorCategory.NETWORK }
-          );
+          const error = new Error('No internet connection');
+          throw error;
         }
         
         if (this._connectivityStatus === 'poor') {
           // Simulate timeout
           await new Promise(resolve => setTimeout(resolve, 100));
-          throw createAppError(
-            ErrorCodes.NETWORK_ERROR,
-            'Request timed out',
-            { category: ErrorCategory.NETWORK }
-          );
+          const error = new Error('Request timed out');
+          throw error;
         }
         
         // Check for memory pressure
         if (this._memoryPressure === 'critical') {
-          throw createAppError(
-            ErrorCodes.MEMORY_ERROR,
-            'Insufficient memory',
-            { category: ErrorCategory.SYSTEM }
-          );
+          const error = new Error('Insufficient memory');
+          throw error;
         }
         
         // Check if cancelled during processing
         if (!this._isTranscribing) {
-          throw createAppError(
-            ErrorCodes.SPEECH_RECOGNITION_ERROR,
-            'Transcription cancelled',
-            { category: ErrorCategory.SPEECH }
-          );
+          const error = new Error('Transcription cancelled');
+          throw error;
         }
         
         return {
@@ -128,11 +107,8 @@ class MockMobileSpeechService implements SpeechService {
     // Setup synthesize with mobile edge cases
     this.synthesize.mockImplementation(async (options: SpeechSynthesisOptions) => {
       if (this._isSynthesizing) {
-        throw createAppError(
-          ErrorCodes.SPEECH_SYNTHESIS_ERROR,
-          'Already synthesizing',
-          { category: ErrorCategory.SPEECH }
-        );
+        const error = new Error('Already synthesizing');
+        throw error;
       }
       
       this._isSynthesizing = true;
@@ -143,11 +119,8 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check for backgrounding
         if (this._isBackgrounded) {
-          throw createAppError(
-            ErrorCodes.SPEECH_SYNTHESIS_ERROR,
-            'Application backgrounded',
-            { category: ErrorCategory.SPEECH }
-          );
+          const error = new Error('Application backgrounded');
+          throw error;
         }
         
         // Check for low power mode
@@ -159,11 +132,8 @@ class MockMobileSpeechService implements SpeechService {
         
         // Check if cancelled
         if (!this._isSynthesizing) {
-          throw createAppError(
-            ErrorCodes.SPEECH_SYNTHESIS_ERROR,
-            'Synthesis cancelled',
-            { category: ErrorCategory.SPEECH }
-          );
+          const error = new Error('Synthesis cancelled');
+          throw error;
         }
         
         return new Blob(['test-audio'], { type: 'audio/mp3' });

@@ -1,4 +1,4 @@
-import { SessionMetadata } from '../models';
+import { Session } from '../models';
 
 /**
  * Session service interface
@@ -22,21 +22,21 @@ export interface SessionService {
       sortBy?: 'createdAt' | 'duration';
       sortOrder?: 'asc' | 'desc';
     }
-  ): Promise<SessionMetadata[]>;
+  ): Promise<Session[]>;
   
   /**
    * Get a single session by ID
    * @param sessionId The session ID to get
    * @returns A promise that resolves to the session metadata or null if not found
    */
-  getSession(sessionId: string): Promise<SessionMetadata | null>;
+  getSession(sessionId: string): Promise<Session | null>;
   
   /**
    * Save a new session or update an existing one
    * @param session The session metadata to save
    * @returns A promise that resolves when the session is saved
    */
-  saveSession(session: SessionMetadata): Promise<void>;
+  saveSession(session: Session): Promise<void>;
   
   /**
    * Delete a session by ID

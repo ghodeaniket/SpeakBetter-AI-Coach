@@ -3,21 +3,26 @@
  * Provides a way to get service instances with dependency injection
  */
 
-import { AuthService } from './auth';
+import { AuthService, AuthStateListener, AuthState } from './auth';
 import { UserService } from './user';
-import { SessionService } from './session';
+import { SessionService, SessionQueryOptions } from './session';
 import { AnalysisService } from './analysis';
-import { FeedbackService } from './feedback';
+import { FeedbackService, FeedbackQueryOptions, FeedbackGenerationParams, TextFeedback } from './feedback';
 import { LocalStorageService, RemoteStorageService } from './storage';
 import { NetworkService } from './network';
-import { SpeechService } from './speech';
-import { AudioService } from './audio';
-import { VisualizationService } from './visualization';
+import { SpeechService, TranscriptionResult, VoiceInfo } from './speech';
+import { AudioService, AudioRecordingState, AudioVisualizationData } from './audio';
+import { VisualizationService, VisualizationContext } from './visualization';
+import { User, UserSettings, UserCredentials, UserCreateRequest, UserUpdateRequest } from '../models/user';
+import { Session, SessionType, SessionStatus, SessionCreateRequest, SessionUpdateRequest } from '../models/session';
+import { Feedback, FeedbackCreateRequest, FeedbackUpdateRequest } from '../models/feedback';
+import { Analysis } from '../models/analysis';
+import { AppError } from '../models/error';
 
 /**
  * Platform type
  */
-export type Platform = 'web' | 'mobile' | 'desktop';
+export type Platform = 'web' | 'mobile' | 'desktop' | 'test';
 
 /**
  * Service types
@@ -231,174 +236,404 @@ export function getService<K extends keyof Services>(serviceType: K): Services[K
  * Mock service factory implementation for testing
  */
 export class MockServiceFactory extends BaseServiceFactory {
-  protected platform: Platform = 'test' as Platform;
-
+  protected platform: Platform = 'test';
   private services: Partial<Services> = {};
 
   // Basic mock implementations for each service
-  getAuthService() {
+  getAuthService(): AuthService {
     if (!this.services.auth) {
       this.services.auth = {
         getCurrentUser: async () => null,
-        signInWithEmailPassword: async () => ({ uid: 'mock-uid' }),
-        signInWithGoogle: async () => ({ uid: 'mock-uid' }),
-        createUser: async () => ({ uid: 'mock-uid' }),
+        signInWithEmailPassword: async (): Promise<User> => {
+          return {
+            uid: 'mock-uid',
+            displayName: 'Mock User',
+            email: 'mock@example.com',
+            photoURL: null,
+            createdAt: new Date(),
+            lastLoginAt: new Date(),
+            settings: {
+              selectedVoice: 'default',
+              coachPersonality: 'supportive',
+              notificationPreferences: {
+                email: false,
+                inApp: true,
+                practiceDays: ['monday', 'wednesday', 'friday']
+              }
+            },
+            emailVerified: false
+          };
+        },
+        signInWithGoogle: async (): Promise<User> => {
+          return {
+            uid: 'mock-uid',
+            displayName: 'Mock User',
+            email: 'mock@example.com',
+            photoURL: null,
+            createdAt: new Date(),
+            lastLoginAt: new Date(),
+            settings: {
+              selectedVoice: 'default',
+              coachPersonality: 'supportive',
+              notificationPreferences: {
+                email: false,
+                inApp: true,
+                practiceDays: ['monday', 'wednesday', 'friday']
+              }
+            },
+            emailVerified: false
+          };
+        },
         signOut: async () => undefined,
+        createUserWithEmailPassword: async (): Promise<User> => {
+          return {
+            uid: 'mock-uid',
+            displayName: 'Mock User',
+            email: 'mock@example.com',
+            photoURL: null,
+            createdAt: new Date(),
+            lastLoginAt: new Date(),
+            settings: {
+              selectedVoice: 'default',
+              coachPersonality: 'supportive',
+              notificationPreferences: {
+                email: false,
+                inApp: true,
+                practiceDays: ['monday', 'wednesday', 'friday']
+              }
+            },
+            emailVerified: false
+          };
+        },
         onAuthStateChanged: () => () => {},
         getAuthState: () => ({ loading: false, user: null, error: null }),
-        isAuthenticated: () => false,
         sendPasswordResetEmail: async () => undefined,
         updatePassword: async () => undefined,
-        deleteAccount: async () => undefined,
+        deleteUser: async () => undefined,
+        getIdToken: async () => null,
+        isTokenExpired: async () => false,
+        sendEmailVerification: async () => undefined
       };
     }
-    return this.services.auth!;
+    return this.services.auth as AuthService;
   }
 
-  getUserService() {
+  getUserService(): UserService {
     if (!this.services.user) {
       this.services.user = {
-        getUserProfile: async () => null,
-        updateUserProfile: async () => undefined,
-        deleteUserProfile: async () => undefined,
-        getUserPreferences: async () => ({}),
-        updateUserPreferences: async () => undefined,
+        getUserById: async () => null,
+        createUser: async (): Promise<User> => ({
+          uid: 'mock-uid',
+          displayName: 'Mock User',
+          email: 'mock@example.com',
+          photoURL: null,
+          createdAt: new Date(),
+          lastLoginAt: new Date(),
+          settings: {
+            selectedVoice: 'default',
+            coachPersonality: 'supportive',
+            notificationPreferences: {
+              email: false,
+              inApp: true,
+              practiceDays: ['monday', 'wednesday', 'friday']
+            }
+          },
+          emailVerified: false
+        }),
+        updateUser: async () => ({
+          uid: 'mock-uid',
+          displayName: 'Mock User',
+          email: 'mock@example.com',
+          photoURL: null,
+          createdAt: new Date(),
+          lastLoginAt: new Date(),
+          settings: {
+            selectedVoice: 'default',
+            coachPersonality: 'supportive',
+            notificationPreferences: {
+              email: false,
+              inApp: true,
+              practiceDays: ['monday', 'wednesday', 'friday']
+            }
+          },
+          emailVerified: false
+        }),
+        deleteUser: async () => undefined,
+        getUserSettings: async () => ({
+          selectedVoice: 'default',
+          coachPersonality: 'supportive',
+          notificationPreferences: {
+            email: false,
+            inApp: true,
+            practiceDays: ['monday', 'wednesday', 'friday']
+          }
+        }),
+        updateUserSettings: async () => ({
+          selectedVoice: 'default',
+          coachPersonality: 'supportive',
+          notificationPreferences: {
+            email: false,
+            inApp: true,
+            practiceDays: ['monday', 'wednesday', 'friday']
+          }
+        }),
+        userExists: async () => false,
+        getLastLoginTime: async () => new Date(),
+        updateLastLoginTime: async () => undefined
       };
     }
-    return this.services.user!;
+    return this.services.user as UserService;
   }
 
-  getSessionService() {
+  getSessionService(): SessionService {
     if (!this.services.session) {
+      const mockDate = new Date();
       this.services.session = {
-        createSession: async () => ({ id: 'mock-session-id' }),
-        getSession: async () => null,
-        updateSession: async () => undefined,
+        getSessionById: async () => null,
+        getUserSessions: async () => [],
+        createSession: async (): Promise<Session> => {
+          return {
+            id: 'mock-session-id',
+            userId: 'mock-user-id',
+            type: SessionType.FREESTYLE,
+            title: 'Mock Session',
+            status: SessionStatus.COMPLETED,
+            durationSeconds: 120,
+            createdAt: mockDate,
+            updatedAt: mockDate,
+            hasAnalysis: false,
+            hasFeedback: false
+          };
+        },
+        updateSession: async (id: string): Promise<Session> => {
+          return {
+            id,
+            userId: 'mock-user-id',
+            type: SessionType.FREESTYLE,
+            title: 'Mock Session',
+            status: SessionStatus.COMPLETED,
+            durationSeconds: 120,
+            createdAt: mockDate,
+            updatedAt: mockDate,
+            hasAnalysis: false,
+            hasFeedback: false
+          };
+        },
         deleteSession: async () => undefined,
-        listSessions: async () => [],
-        getSessionHistory: async () => [],
+        getLatestSession: async () => null,
+        countUserSessions: async () => 0,
+        markSessionHasAnalysis: async () => undefined,
+        markSessionHasFeedback: async () => undefined,
+        updateSessionStatus: async () => undefined,
+        onSessionUpdated: () => () => {}
       };
     }
-    return this.services.session!;
+    return this.services.session as SessionService;
   }
 
-  getAnalysisService() {
+  getAnalysisService(): AnalysisService {
     if (!this.services.analysis) {
       this.services.analysis = {
-        analyzeAudio: async () => ({}),
-        getAnalysisResult: async () => null,
+        getAnalysisBySessionId: async () => null,
+        createAnalysis: async () => ({} as Analysis),
+        updateAnalysis: async () => ({} as Analysis),
+        deleteAnalysis: async () => undefined,
+        getSessionTranscription: async () => '',
         detectFillerWords: () => [],
         calculateSpeakingRate: () => 0,
         calculateClarityScore: () => 0,
       };
     }
-    return this.services.analysis!;
+    return this.services.analysis as AnalysisService;
   }
 
-  getFeedbackService() {
+  getFeedbackService(): FeedbackService {
     if (!this.services.feedback) {
       this.services.feedback = {
-        generateFeedback: async () => ({}),
-        getFeedback: async () => null,
+        getFeedbackById: async () => null,
+        getFeedbackBySessionId: async () => null,
+        getUserFeedback: async () => [],
+        createFeedback: async (): Promise<Feedback> => ({
+          id: 'mock-feedback-id',
+          sessionId: 'mock-session-id',
+          userId: 'mock-user-id',
+          analysisId: 'mock-analysis-id',
+          textFeedback: {
+            positive: 'Good job!',
+            improvement: 'Try to speak more clearly.',
+            suggestion: 'Practice regularly.',
+            encouragement: 'Keep it up!'
+          },
+          audioFeedbackUrl: 'mock-url',
+          createdAt: new Date(),
+          viewedAt: undefined
+        }),
+        updateFeedback: async () => ({} as Feedback),
+        deleteFeedback: async () => undefined,
+        markFeedbackViewed: async () => undefined,
         rateFeedback: async () => undefined,
+        generateTextFeedback: async (): Promise<TextFeedback> => ({
+          positive: 'Good job!',
+          improvement: 'Try to speak more clearly.',
+          suggestion: 'Practice regularly.',
+          encouragement: 'Keep it up!'
+        }),
+        generateAudioFeedback: async () => 'mock-url',
+        generateComprehensiveFeedback: async () => ({
+          textFeedback: {
+            positive: 'Good job!',
+            improvement: 'Try to speak more clearly.',
+            suggestion: 'Practice regularly.',
+            encouragement: 'Keep it up!'
+          },
+          audioFeedbackUrl: 'mock-url'
+        })
       };
     }
-    return this.services.feedback!;
+    return this.services.feedback as FeedbackService;
   }
 
-  getLocalStorageService() {
+  getLocalStorageService(): LocalStorageService {
     if (!this.services.localStorage) {
       this.services.localStorage = {
         getItem: async () => null,
         setItem: async () => undefined,
         removeItem: async () => undefined,
         clear: async () => undefined,
-        getAllItems: async () => ({}),
+        getItemWithMetadata: async () => null,
+        getAllKeys: async () => [],
+        hasItem: async () => false,
+        isExpired: async () => false
       };
     }
-    return this.services.localStorage!;
+    return this.services.localStorage as LocalStorageService;
   }
 
-  getRemoteStorageService() {
+  getRemoteStorageService(): RemoteStorageService {
     if (!this.services.remoteStorage) {
       this.services.remoteStorage = {
         uploadFile: async () => 'mock-url',
         downloadFile: async () => new Blob(),
         deleteFile: async () => undefined,
         getFileMetadata: async () => ({}),
-        getDownloadURL: async () => 'mock-url',
+        getDownloadUrl: async () => 'mock-url',
+        listFiles: async () => [],
+        updateFileMetadata: async () => undefined
       };
     }
-    return this.services.remoteStorage!;
+    return this.services.remoteStorage as RemoteStorageService;
   }
 
-  getNetworkService() {
+  getNetworkService(): NetworkService {
     if (!this.services.network) {
       this.services.network = {
         isOnline: () => true,
-        onNetworkStatusChange: () => () => {},
-        getNetworkType: () => 'wifi',
+        onNetworkStateChanged: () => () => {},
+        getNetworkStatus: () => ({ isOnline: true, type: 'wifi', isSlowConnection: false }),
+        isSlowConnection: () => false,
+        isApiReachable: async () => true,
+        waitForConnection: async () => undefined,
+        retry: async (fn) => fn()
       };
     }
-    return this.services.network!;
+    return this.services.network as NetworkService;
   }
 
-  getSpeechService() {
+  getSpeechService(): SpeechService {
     if (!this.services.speech) {
       this.services.speech = {
-        transcribe: async () => ({ text: 'test transcription' }),
+        transcribe: async (): Promise<TranscriptionResult> => ({ 
+          text: 'test transcription',
+          confidence: 0.9,
+          wordTimings: [],
+          languageCode: 'en-US',
+          durationSeconds: 2
+        }),
         synthesize: async () => new Blob(),
-        getAvailableVoices: () => [],
-        getVoicesForLanguage: () => [],
-        getVoiceById: () => null,
+        getAvailableVoices: async (): Promise<VoiceInfo[]> => [],
+        getVoicesForLanguage: async (): Promise<VoiceInfo[]> => [],
+        getVoiceById: async (): Promise<VoiceInfo | null> => null,
         cancel: () => {},
         isRecognitionSupported: () => true,
         isSynthesisSupported: () => true,
       };
     }
-    return this.services.speech!;
+    return this.services.speech as SpeechService;
   }
 
-  getAudioService() {
+  getAudioService(): AudioService {
     if (!this.services.audio) {
+      const recordingState: AudioRecordingState = {
+        isRecording: false,
+        durationSeconds: 0,
+        audioLevel: 0,
+        isProcessing: false,
+        isSilent: false,
+        error: null
+      };
+
+      const visualizationData: AudioVisualizationData = {
+        frequencyData: new Uint8Array(),
+        timeData: new Uint8Array(),
+        averageLevel: 0,
+        peakLevel: 0
+      };
+
       this.services.audio = {
-        requestPermission: async () => 'granted',
+        requestPermission: async () => true,
         isRecordingSupported: () => true,
         startRecording: async () => undefined,
         stopRecording: async () => new Blob(),
         pauseRecording: async () => undefined,
         resumeRecording: async () => undefined,
-        cancelRecording: async () => undefined,
-        getRecordingState: () => 'inactive',
+        cancelRecording: () => undefined,
+        getRecordingState: () => recordingState,
         playAudio: async () => undefined,
-        pauseAudio: async () => undefined,
-        stopAudio: async () => undefined,
+        pauseAudio: () => undefined,
+        stopAudio: () => undefined,
         getPlaybackTime: () => 0,
         setPlaybackTime: async () => undefined,
         getAudioDuration: () => 0,
         isPlaying: () => false,
-        getVisualizationData: () => new Uint8Array(),
+        getVisualizationData: () => visualizationData,
         convertFormat: async () => new Blob(),
         createAudioUrl: () => 'mock-url',
         revokeAudioUrl: () => {},
       };
     }
-    return this.services.audio!;
+    return this.services.audio as AudioService;
   }
 
-  getVisualizationService() {
+  getVisualizationService(): VisualizationService {
     if (!this.services.visualization) {
-      this.services.visualization = {
-        createContext: () => ({
-          createGradient: () => ({}),
-          clearCanvas: () => {},
-          fillRect: () => {},
-          drawLine: () => {},
-          drawWaveform: () => {},
-          drawBars: () => {},
-          drawText: () => {},
-          getCanvas: () => ({}),
+      const mockVisualizationContext: VisualizationContext = {
+        clear: () => {},
+        setFillStyle: () => {},
+        setStrokeStyle: () => {},
+        setLineWidth: () => {},
+        beginPath: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        rect: () => {},
+        roundedRect: () => {},
+        fill: () => {},
+        stroke: () => {},
+        createLinearGradient: () => ({
+          addColorStop: () => {}
         }),
+        createRadialGradient: () => ({
+          addColorStop: () => {}
+        }),
+        fillText: () => {},
+        setTextAlign: () => {},
+        setTextBaseline: () => {},
+        setFont: () => {},
+        save: () => {},
+        restore: () => {}
+      };
+
+      this.services.visualization = {
+        createContext: () => mockVisualizationContext,
         releaseContext: () => {},
         drawAudioVisualization: () => {},
         drawWordTimings: () => {},
@@ -408,6 +643,6 @@ export class MockServiceFactory extends BaseServiceFactory {
         isSupported: () => true,
       };
     }
-    return this.services.visualization!;
+    return this.services.visualization as VisualizationService;
   }
 }

@@ -1,4 +1,4 @@
-import { SpeechAnalysisResult } from '../models';
+import { SpeechAnalysis } from '../models';
 
 /**
  * Speech service interface
@@ -20,7 +20,7 @@ export interface SpeechService {
       enhancedModel?: boolean;
       wordTimestamps?: boolean;
     }
-  ): Promise<SpeechAnalysisResult>;
+  ): Promise<SpeechAnalysis>;
   
   /**
    * Synthesize text to speech
