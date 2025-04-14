@@ -48,3 +48,18 @@ TempRNProject/
 temp_expo_project/
 temp_expo_project2/
 temp_project/
+
+# TypeScript generated files
+*.js
+*.d.ts
+*.js.map
+*.tsbuildinfo
+!/jest.config.js
+!/*.js
+
+# Test coverage
+**/coverage/
+*.lcov
+
+# Package build artifacts
+.turbo
