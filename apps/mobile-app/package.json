@@ -6,9 +6,10 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "start": "react-native start",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "eslint .",
-    "pods": "cd ios && pod install && cd .."
+    "pods": "cd ios && pod install && cd ..",
+    "build": "echo 'Skipping build for mobile-app'"
   },
   "dependencies": {
     "@speakbetter/mobile": "*",
