@@ -4,7 +4,7 @@ import { SpeechAnalysis } from '../models/analysis';
 // Create a mock implementation of the SpeechToTextService
 const createMockSpeechToTextService = (): SpeechToTextService => {
   return {
-    transcribeAudio: async (options: TranscriptionOptions): Promise<SpeechAnalysis> => {
+    transcribeAudio: async (_options: TranscriptionOptions): Promise<SpeechAnalysis> => {
       // Mock implementation
       return {
         id: 'analysis123',
@@ -74,7 +74,7 @@ const createMockSpeechToTextService = (): SpeechToTextService => {
       return durationSeconds > 0 ? (words / durationSeconds) * 60 : 0;
     },
     
-    calculateClarityScore: (analysis: Partial<SpeechAnalysis>): number => {
+    calculateClarityScore: (_analysis: Partial<SpeechAnalysis>): number => {
       // Mock implementation
       return 75;
     }

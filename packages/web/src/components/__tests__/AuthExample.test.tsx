@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { act } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AuthExample } from '../AuthExample';
 import { AuthService, User } from '@speakbetter/core';

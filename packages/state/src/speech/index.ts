@@ -42,7 +42,7 @@ export const useSpeechStore = create<SpeechState>()(
     setMetrics: (metrics) => set((state) => { state.metrics = metrics; }),
     setProcessing: (isProcessing) => set((state) => { state.isProcessing = isProcessing; }),
     setError: (error) => set((state) => { state.error = error; }),
-    reset: () => set((state) => ({
+    reset: () => set(() => ({
       isRecording: false,
       audioBlob: null,
       audioUrl: null,

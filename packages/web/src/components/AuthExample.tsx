@@ -50,7 +50,10 @@ export const AuthExample: React.FC = () => {
         await userService.updateLastLoginTime(authUser.uid);
       }
     } catch (error) {
-      console.error('Error signing in with Google:', error);
+      // Using a more test-friendly approach to error logging
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('Error signing in with Google:', error);
+      }
       setError('Failed to sign in with Google');
     } finally {
       setLoading(false);
@@ -62,7 +65,10 @@ export const AuthExample: React.FC = () => {
       setError(null);
       await authService.signOut();
     } catch (error) {
-      console.error('Error signing out:', error);
+      // Using a more test-friendly approach to error logging
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('Error signing out:', error);
+      }
       setError('Failed to sign out');
     }
   };
