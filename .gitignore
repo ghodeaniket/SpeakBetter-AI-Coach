@@ -63,3 +63,6 @@ temp_project/
 
 # Package build artifacts
 .turbo
+-e 
+# Ignore all coverage files
+**coverage/**
