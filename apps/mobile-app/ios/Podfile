@@ -20,6 +20,9 @@ pod 'ReactNativeAudioToolkit', :path => '../node_modules/@react-native-community
 pod 'RNAudio', :path => '../node_modules/react-native-audio'
 pod 'RNPermissions', :path => '../node_modules/react-native-permissions'
 
+# Environment configuration
+pod 'react-native-config', :path => '../node_modules/react-native-config'
+
 target 'SpeakBetterCoach' do
   config = use_native_modules!
 

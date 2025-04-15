@@ -31,4 +31,10 @@ config.transformer.getTransformOptions = async () => ({
   },
 });
 
+// 4. Support alternative entry files (for testing)
+const defaultSourceExts = config.resolver.sourceExts || ['js', 'jsx', 'ts', 'tsx', 'json'];
+config.resolver.sourceExts = process.env.ENTRY_FILE === 'index.test.js'
+  ? ['test.tsx', 'test.ts', ...defaultSourceExts]
+  : defaultSourceExts;
+
 module.exports = config;
