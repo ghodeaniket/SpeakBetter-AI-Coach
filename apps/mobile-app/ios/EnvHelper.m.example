@@ -1,0 +1,59 @@
+//
+//  EnvHelper.m
+//  SpeakBetter
+//
+//  Example of accessing environment variables in Objective-C
+//
+
+#import <React/RCTBridgeModule.h>
+#import "RNCConfig.h"
+
+@interface EnvHelper : NSObject <RCTBridgeModule>
+@end
+
+@implementation EnvHelper
+
+RCT_EXPORT_MODULE();
+
+RCT_EXPORT_METHOD(isConfigured:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  // Example of accessing environment variables in native code
+  NSString *apiKey = [RNCConfig envFor:@"FIREBASE_API_KEY"];
+  BOOL isConfigured = apiKey != nil && apiKey.length > 0;
+  
+  resolve(@(isConfigured));
+}
+
+// Get Firebase configuration as a dictionary
+RCT_EXPORT_METHOD(getFirebaseConfig:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  NSMutableDictionary *config = [NSMutableDictionary dictionary];
+  
+  config[@"apiKey"] = [RNCConfig envFor:@"FIREBASE_API_KEY"] ?: @"";
+  config[@"authDomain"] = [RNCConfig envFor:@"FIREBASE_AUTH_DOMAIN"] ?: @"";
+  config[@"projectId"] = [RNCConfig envFor:@"FIREBASE_PROJECT_ID"] ?: @"";
+  config[@"storageBucket"] = [RNCConfig envFor:@"FIREBASE_STORAGE_BUCKET"] ?: @"";
+  config[@"messagingSenderId"] = [RNCConfig envFor:@"FIREBASE_MESSAGING_SENDER_ID"] ?: @"";
+  config[@"appId"] = [RNCConfig envFor:@"FIREBASE_APP_ID"] ?: @"";
+  
+  resolve(config);
+}
+
+// Make certain constants available to JavaScript
++ (NSDictionary *)constantsToExport
+{
+  return @{
+    @"appEnv": [RNCConfig envFor:@"APP_ENV"] ?: @"development",
+    @"apiUrl": [RNCConfig envFor:@"API_URL"] ?: @"",
+  };
+}
+
+// Required to export constants
++ (BOOL)requiresMainQueueSetup
+{
+  return YES;
+}
+
+@end

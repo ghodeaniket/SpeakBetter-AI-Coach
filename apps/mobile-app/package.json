@@ -17,7 +17,10 @@
     "env:setup": "npx react-native link react-native-config && npm run pods",
     "start:test": "ENTRY_FILE='index.test.js' react-native start",
     "ios:test": "ENTRY_FILE='index.test.js' ENVFILE=.env.development react-native run-ios",
-    "android:test": "ENTRY_FILE='index.test.js' ENVFILE=.env.development react-native run-android"
+    "android:test": "ENTRY_FILE='index.test.js' ENVFILE=.env.development react-native run-android",
+    "env:dev": "cp .env.development .env && echo 'Switched to dev environment'",
+    "env:prod": "cp .env.production .env && echo 'Switched to production environment'",
+    "env:check": "node -e \"const config = require('react-native-config'); console.log('Current environment:', config.APP_ENV || 'not set');\""
   },
   "dependencies": {
     "@speakbetter/mobile": "*",
