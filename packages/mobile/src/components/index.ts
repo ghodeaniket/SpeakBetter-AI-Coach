@@ -1,4 +1,2 @@
-export * from "./ui";
-export * from "./audio";
-
-// We'll add more component exports here as they're implemented
+export * from './AudioVisualizer';
+// Export other components here as they're created

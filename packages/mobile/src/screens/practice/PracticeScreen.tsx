@@ -11,7 +11,7 @@ import { useStyles } from '../../theme/useStyles';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeContext';
 import { Feather } from '@expo/vector-icons';
-import { AudioVisualizer } from '../../components/ui';
+import { AudioVisualizer } from '../../components/AudioVisualizer';
 import { useAudioRecording, useSpeechAnalysis } from '../../hooks';
 import * as Haptics from 'expo-haptics';
 import { useNetwork } from '../../contexts';
@@ -39,8 +39,6 @@ export const PracticeScreen: React.FC = () => {
   const { 
     isRecording, 
     duration, 
-    audioLevel,
-    visualizationData,
     startRecording, 
     stopRecording,
     pauseRecording,
@@ -569,12 +567,18 @@ export const PracticeScreen: React.FC = () => {
             <>
               <Text style={styles.timerText}>{formatTime(elapsedTime)}</Text>
               
+              {/* Updated to use our new AudioVisualizer component */}
               <AudioVisualizer 
-                audioLevel={audioLevel}
-                audioData={visualizationData.frequencyData}
-                type={VisualizationType.FREQUENCY}
-                barCount={32}
                 isRecording={recordingState === 'recording'}
+                style={{ width: '100%', height: 100 }}
+                barCount={30}
+                barWidth={3}
+                barSpacing={3}
+                minBarHeight={5}
+                maxBarHeight={80}
+                backgroundColor={theme.colors.lightBg}
+                lowColor={theme.colors.primary}
+                highColor={theme.colors.warning}
               />
             </>
           )}
