@@ -1,40 +1,98 @@
+// Enhanced metro.config.js for monorepo
 const { getDefaultConfig } = require('@react-native/metro-config');
 const path = require('path');
+const fs = require('fs');
+const exclusionList = require('metro-config/src/defaults/exclusionList');
+const os = require('os');
 
+// Root directories
 const workspaceRoot = path.resolve(__dirname, '../..');
 const projectRoot = __dirname;
 
-const config = getDefaultConfig(projectRoot);
+// Find all package directories
+const packagesDir = path.resolve(workspaceRoot, 'packages');
+const packages = fs.readdirSync(packagesDir)
+  .filter(dir => fs.statSync(path.join(packagesDir, dir)).isDirectory());
 
-// 1. Watch all files within the monorepo
-config.watchFolders = [workspaceRoot];
+console.log('Found packages:', packages);
 
-// 2. Let Metro know where to resolve packages
-config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, 'node_modules'),
-  path.resolve(workspaceRoot, 'node_modules'),
-];
+// Create watchFolders for all packages
+const watchFolders = packages.map(pkg => path.join(packagesDir, pkg));
 
-config.resolver.extraNodeModules = {
-  '@speakbetter/mobile': path.resolve(workspaceRoot, 'packages/mobile'),
-  '@speakbetter/core': path.resolve(workspaceRoot, 'packages/core'),
-  '@speakbetter/api': path.resolve(workspaceRoot, 'packages/api'),
-  '@speakbetter/ui': path.resolve(workspaceRoot, 'packages/ui'),
-  '@speakbetter/state': path.resolve(workspaceRoot, 'packages/state')
-};
-
-// 3. Define custom transformer for shared packages
-config.transformer.getTransformOptions = async () => ({
-  transform: {
-    experimentalImportSupport: false,
-    inlineRequires: true,
-  },
+// Create extraNodeModules mapping for all packages
+const extraNodeModules = packages.reduce((acc, pkg) => {
+  acc[`@speakbetter/${pkg}`] = path.join(packagesDir, pkg);
+  return acc;
+}, {
+  'react': path.resolve(projectRoot, 'node_modules/react'),
+  'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
 });
 
-// 4. Support alternative entry files (for testing)
+// Get the default Metro configuration
+const config = getDefaultConfig(projectRoot);
+
+// Configure blacklisted paths
+const blockList = exclusionList([
+  // Exclude all node_modules from packages except the ones we need
+  ...packages.map(pkg => 
+    new RegExp(`${path.join(packagesDir, pkg, 'node_modules')}/(?!(react|react-native|@react|@babel)/).*`)
+  ),
+  // Exclude all Pods from watchFolders
+  /.*\/ios\/Pods\/.*/,
+  // Exclude any potential test directories that could cause issues
+  /.*\/__tests__\/.*/,
+  /.*\/__fixtures__\/.*/,
+  /.*\/\.[a-z]+\/.*/,  // hidden directories like .git
+]);
+
+// Support for alternative entry files (testing)
 const defaultSourceExts = config.resolver.sourceExts || ['js', 'jsx', 'ts', 'tsx', 'json'];
-config.resolver.sourceExts = process.env.ENTRY_FILE === 'index.test.js'
+const sourceExts = process.env.ENTRY_FILE === 'index.test.js'
   ? ['test.tsx', 'test.ts', ...defaultSourceExts]
   : defaultSourceExts;
 
-module.exports = config;
+// Configure Metro
+module.exports = {
+  ...config,
+  projectRoot,
+  watchFolders: [workspaceRoot, ...watchFolders],
+  transformer: {
+    ...config.transformer,
+    getTransformOptions: async () => ({
+      transform: {
+        experimentalImportSupport: false,
+        inlineRequires: true,
+      },
+    }),
+    // Add any additional transformer options here if needed
+  },
+  resolver: {
+    ...config.resolver,
+    blockList,
+    nodeModulesPaths: [
+      path.resolve(projectRoot, 'node_modules'),
+      path.resolve(workspaceRoot, 'node_modules'),
+    ],
+    extraNodeModules,
+    sourceExts,
+    // Enable symlinks for monorepo (React Native 0.71+)
+    enableSymlinks: true,
+    // Ensure we can resolve asset files properly
+    assetExts: [...(config.resolver.assetExts || []), 'pem', 'xcconfig'],
+  },
+  // Add cache configuration for better performance
+  cacheStores: [
+    new (require('metro-cache').FileStore)({
+      root: path.join(os.tmpdir(), 'metro-cache'),
+    }),
+  ],
+  // Add performance logging for debugging
+  reporter: {
+    ...config.reporter,
+    update: (event) => {
+      if (event.type === 'bundle_build_done') {
+        console.log(`Bundle built in ${event.buildTime}ms`);
+      }
+    },
+  },
+};

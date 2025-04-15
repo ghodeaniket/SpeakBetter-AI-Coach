@@ -57,6 +57,14 @@ temp_project/
 !/jest.config.js
 !/*.js
 
+# Exceptions to JS ignore - Metro bundler related files
+!apps/mobile-app/metro.config.js
+!apps/mobile-app/metro.debug.js
+!apps/mobile-app/scripts/**/*.js
+!apps/mobile-app/src/utils/metroHelper.js
+!apps/mobile-app/index.js
+!apps/mobile-app/index.test.js
+
 # Test coverage
 **/coverage/
 *.lcov

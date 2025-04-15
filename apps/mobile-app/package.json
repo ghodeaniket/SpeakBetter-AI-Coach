@@ -20,14 +20,19 @@
     "android:test": "ENTRY_FILE='index.test.js' ENVFILE=.env.development react-native run-android",
     "env:dev": "cp .env.development .env && echo 'Switched to dev environment'",
     "env:prod": "cp .env.production .env && echo 'Switched to production environment'",
-    "env:check": "node -e \"const config = require('react-native-config'); console.log('Current environment:', config.APP_ENV || 'not set');\""
+    "env:check": "node -e \"const config = require('react-native-config'); console.log('Current environment:', config.APP_ENV || 'not set');\"",
+    "metro:reset": "node ./scripts/reset-metro-cache.js",
+    "start:reset": "react-native start --reset-cache",
+    "clean:metro": "npm run metro:reset && npm run start:reset",
+    "metro:diagnostic": "node -e \"console.log('Metro config location:', require.resolve('metro-config'))\"",
+    "metro:inspect": "node -e \"const config = require('./metro.config.js'); console.log(JSON.stringify(config, null, 2))\""
   },
   "dependencies": {
-    "@speakbetter/mobile": "*",
-    "@speakbetter/core": "*",
     "@speakbetter/api": "*",
-    "@speakbetter/ui": "*",
+    "@speakbetter/core": "*",
+    "@speakbetter/mobile": "*",
     "@speakbetter/state": "*",
+    "@speakbetter/ui": "*",
     "react": "18.2.0",
     "react-native": "0.73.0",
     "react-native-config": "^1.5.1",
@@ -42,7 +47,10 @@
     "@types/react-native": "^0.72.0",
     "babel-jest": "^29.6.3",
     "jest": "^29.6.3",
+    "metro-cache": "^0.77.0",
+    "metro-config": "^0.77.0",
     "metro-react-native-babel-preset": "^0.77.0",
+    "rimraf": "^5.0.1",
     "typescript": "5.0.4"
   }
 }
