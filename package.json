@@ -10,8 +10,12 @@
   "scripts": {
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=@speakbetter/web-app",
+    "dev:mobile": "turbo run start --filter=@speakbetter/mobile-app",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=@speakbetter/web-app",
+    "build:mobile": "turbo run build --filter=@speakbetter/mobile-app",
+    "ios": "turbo run ios --filter=@speakbetter/mobile-app",
+    "android": "turbo run android --filter=@speakbetter/mobile-app",
     "lint": "turbo run lint",
     "clean": "turbo run clean",
     "test": "turbo run test",
@@ -44,5 +48,11 @@
     "*.{json,md}": [
       "prettier --write"
     ]
+  },
+  "resolutions": {
+    "react": "18.2.0",
+    "react-native": "0.79.0",
+    "@types/react": "18.2.6",
+    "@types/react-native": "0.72.0"
   }
 }
